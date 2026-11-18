@@ -3,41 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0e13" />
+  <meta name="theme-color" content="#000000" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="劍星戰術板" />
-  <title>《劍星》橫放平板全螢幕戰術板｜Stellar Blade Tactical HUD</title>
+  <title>《劍星》戰術板 v2.0｜Stellar Blade Tactical Split-View</title>
   <link rel="manifest" href="./manifest.json" />
   <style>
     :root {
-      --bg-deep: #090c10;
-      --bg-panel: #11161f;
-      --bg-card: #161d29;
-      --bg-card-hover: #1c2535;
-      --bg-elevated: #202a3b;
-      --border-dim: #263246;
-      --border-bright: #354763;
-      --text-main: #e2e8f0;
-      --text-sub: #94a3b8;
-      --text-muted: #64748b;
-      --neon-cyan: #2dd4bf;
-      --neon-cyan-dim: rgba(45, 212, 191, 0.14);
-      --neon-blue: #38bdf8;
-      --neon-blue-dim: rgba(56, 189, 248, 0.16);
-      --neon-purple: #c084fc;
-      --neon-purple-dim: rgba(192, 132, 252, 0.16);
-      --neon-amber: #fbbf24;
-      --neon-amber-dim: rgba(251, 191, 36, 0.15);
-      --neon-red: #f87171;
-      --neon-red-strong: #ef4444;
-      --neon-red-dim: rgba(239, 68, 68, 0.16);
-      --neon-green: #34d399;
-      --neon-green-dim: rgba(52, 211, 153, 0.15);
-      --radius-lg: 14px;
-      --radius-md: 10px;
-      --radius-sm: 8px;
+      /* Apple iPadOS Dark Mode Layered Palette */
+      --ios-bg: #000000;
+      --ios-sidebar: #141416;
+      --ios-card: #1C1C1E;
+      --ios-secondary: #2C2C2E;
+      --ios-tertiary: #3A3A3C;
+      --ios-sep: rgba(255, 255, 255, 0.1);
+      --ios-sep-strong: rgba(255, 255, 255, 0.16);
+
+      /* High-Contrast Living Room Typography Colors */
+      --text-white: #FFFFFF;
+      --text-primary: #EBEBF5;
+      --text-secondary: rgba(235, 235, 245, 0.72);
+      --text-muted: rgba(235, 235, 245, 0.48);
+
+      /* Semantic System Accents */
+      --ios-blue: #0A84FF;
+      --ios-blue-dim: rgba(10, 132, 255, 0.18);
+      --ios-green: #30D158;
+      --ios-green-dim: rgba(48, 209, 88, 0.18);
+      --ios-red: #FF453A;
+      --ios-red-dim: rgba(255, 69, 58, 0.18);
+      --ios-amber: #FFD60A;
+      --ios-amber-dim: rgba(255, 214, 10, 0.16);
+      --ios-purple: #BF5AF2;
+      --ios-purple-dim: rgba(191, 90, 242, 0.2);
+
+      --radius-card: 12px;
+      --radius-sm: 9px;
+
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
       --safe-left: env(safe-area-inset-left, 0px);
@@ -54,414 +58,587 @@
       padding: 0;
       width: 100%;
       height: 100dvh;
-      background-color: var(--bg-deep);
-      color: var(--text-main);
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      background-color: var(--ios-bg);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro TC", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
       overflow: hidden;
       user-select: none;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* App Shell */
-    .hud-shell {
+    button {
+      font-family: inherit;
+    }
+
+    /* =====================================================================
+       UISplitViewController App Shell
+       ===================================================================== */
+    .split-shell {
       display: flex;
-      flex-direction: column;
       width: 100%;
       height: 100dvh;
-      padding: calc(6px + var(--safe-top)) calc(10px + var(--safe-right)) calc(8px + var(--safe-bottom)) calc(10px + var(--safe-left));
-      gap: 8px;
+      overflow: hidden;
+      background: var(--ios-bg);
     }
 
-    /* Top Utility & Axis Header */
-    .top-deck {
-      background: var(--bg-panel);
-      border: 1px solid var(--border-dim);
-      border-radius: var(--radius-lg);
-      padding: 8px 12px;
+    /* Slide-over Backdrop (Portrait < 900px) */
+    .drawer-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.62);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      z-index: 90;
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+
+    .drawer-backdrop.open {
+      display: block;
+      opacity: 1;
+    }
+
+    /* =====================================================================
+       Left Navigation Sidebar (Fixed 270px in Landscape, Drawer in Portrait)
+       ===================================================================== */
+    .ios-sidebar {
+      width: 270px;
+      flex-shrink: 0;
+      height: 100dvh;
+      background: var(--ios-sidebar);
+      border-right: 1px solid var(--ios-sep);
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: calc(10px + var(--safe-top)) 12px calc(14px + var(--safe-bottom)) calc(12px + var(--safe-left));
+      gap: 14px;
+      z-index: 100;
+    }
+
+    .ios-sidebar::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .ios-sidebar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.16);
+      border-radius: 2px;
+    }
+
+    /* 1. Top Minimal Info Card */
+    .sidebar-info-card {
+      background: var(--ios-card);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      border: 1px solid var(--ios-sep);
       flex-shrink: 0;
     }
 
-    .top-bar {
+    .sidebar-brand-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      flex-wrap: wrap;
+      padding: 11px 13px;
+      border-bottom: 1px solid var(--ios-sep);
     }
 
-    .brand-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-    }
-
-    .brand-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 15px;
+    .sidebar-app-title {
+      font-size: 17px;
       font-weight: 800;
-      letter-spacing: 0.5px;
-      color: var(--neon-cyan);
+      color: var(--text-white);
+      letter-spacing: 0.2px;
       white-space: nowrap;
     }
 
-    .brand-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: var(--neon-cyan);
-      box-shadow: 0 0 8px var(--neon-cyan);
-    }
-
-    .anchor-jump-btn {
+    .progress-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      background: var(--neon-cyan-dim);
-      color: var(--neon-cyan);
-      border: 1px solid rgba(45, 212, 191, 0.4);
+      justify-content: center;
+      background: var(--ios-secondary);
+      color: var(--ios-green);
+      font-size: 13.5px;
+      font-weight: 800;
+      padding: 3px 9px;
       border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      min-height: 36px;
-      transition: background 0.15s, transform 0.1s;
+      font-variant-numeric: tabular-nums;
+      border: 1px solid rgba(48, 209, 88, 0.32);
     }
 
-    .anchor-jump-btn:active {
-      transform: scale(0.97);
-    }
-
-    .top-actions {
+    /* Lily 100% iOS Toggle Row */
+    .lily-switch-row {
+      width: 100%;
+      min-height: 48px;
+      padding: 6px 13px;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    /* Lily 100% Switch */
-    .lily-toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-bright);
-      border-radius: 999px;
-      padding: 5px 12px;
-      min-height: 38px;
       cursor: pointer;
-      font-size: 13px;
+      text-align: left;
+      transition: background 0.15s;
+    }
+
+    .lily-switch-row:active {
+      background: var(--ios-secondary);
+    }
+
+    .lily-label-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .lily-main-label {
+      font-size: 15.5px;
       font-weight: 700;
-      color: var(--text-main);
-      transition: all 0.2s;
+      color: var(--text-white);
     }
 
-    .lily-toggle.is-ready {
-      background: var(--neon-green-dim);
-      border-color: var(--neon-green);
-      color: var(--neon-green);
-      box-shadow: 0 0 10px rgba(52, 211, 153, 0.18);
+    .lily-sub-label {
+      font-size: 12px;
+      color: var(--ios-amber);
+      font-weight: 600;
     }
 
-    .lily-toggle.is-warn {
-      border-color: rgba(251, 191, 36, 0.55);
-      color: var(--neon-amber);
+    .lily-switch-row.is-ready .lily-sub-label {
+      color: var(--ios-green);
     }
 
-    .lily-pill {
-      width: 34px;
-      height: 18px;
+    .ios-switch {
+      width: 50px;
+      height: 30px;
       border-radius: 999px;
-      background: #2b3548;
+      background: #39393D;
       position: relative;
-      transition: background 0.2s;
+      flex-shrink: 0;
+      transition: background 0.22s ease;
     }
 
-    .lily-pill::after {
+    .ios-switch::after {
       content: "";
       position: absolute;
       top: 2px;
       left: 2px;
-      width: 14px;
-      height: 14px;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
-      background: #cbd5e1;
-      transition: transform 0.2s, background 0.2s;
+      background: #FFFFFF;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+      transition: transform 0.22s cubic-bezier(0.2, 0.85, 0.32, 1.05);
     }
 
-    .lily-toggle.is-ready .lily-pill {
-      background: rgba(52, 211, 153, 0.35);
+    .lily-switch-row.is-ready .ios-switch {
+      background: var(--ios-green);
     }
 
-    .lily-toggle.is-ready .lily-pill::after {
-      transform: translateX(16px);
-      background: var(--neon-green);
+    .lily-switch-row.is-ready .ios-switch::after {
+      transform: translateX(20px);
     }
 
-    .hud-btn {
+    /* 2 & 3. iOS Inset Grouped Navigation Lists */
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-section-header {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      padding: 0 8px;
+      letter-spacing: 0.4px;
+    }
+
+    .ios-group-list {
+      background: var(--ios-card);
+      border-radius: var(--radius-card);
+      border: 1px solid var(--ios-sep);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav-row {
+      width: 100%;
+      min-height: 48px;
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--ios-sep);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 15.5px;
+      font-weight: 600;
+      transition: background 0.12s, color 0.12s;
+    }
+
+    .nav-row:last-child {
+      border-bottom: none;
+    }
+
+    .nav-row:active {
+      background: var(--ios-secondary);
+    }
+
+    .nav-row-left {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .chap-badge {
+      min-width: 26px;
+      height: 24px;
+      padding: 0 6px;
+      border-radius: 6px;
+      background: var(--ios-secondary);
+      color: var(--text-primary);
+      font-size: 12.5px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .nav-row.is-red-node {
+      color: #FF6961;
+    }
+
+    .nav-row.is-red-node .chap-badge {
+      background: var(--ios-red-dim);
+      color: var(--ios-red);
+      border: 1px solid rgba(255, 69, 58, 0.4);
+    }
+
+    .nav-row-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      line-height: 1.3;
+    }
+
+    .nav-row-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .pin-indicator {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      background: var(--ios-amber-dim);
+      border: 1px solid rgba(255, 214, 10, 0.45);
+      border-radius: 6px;
+      padding: 2px 5px;
+      line-height: 1;
+    }
+
+    .chap-done-dot {
+      color: var(--ios-green);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    /* Active Selected Row: System Blue #0A84FF + White Text */
+    .nav-row.active {
+      background: var(--ios-blue);
+      color: var(--text-white);
+      font-weight: 700;
+    }
+
+    .nav-row.active .chap-badge {
+      background: rgba(255, 255, 255, 0.24);
+      color: var(--text-white);
+      border-color: transparent;
+    }
+
+    .nav-row.active .chap-done-dot {
+      color: var(--text-white);
+    }
+
+    .nav-row.active .pin-indicator {
+      background: rgba(0, 0, 0, 0.28);
+      border-color: rgba(255, 255, 255, 0.55);
+    }
+
+    .sidebar-version {
+      margin-top: auto;
+      padding: 6px 4px 2px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.4px;
+      flex-shrink: 0;
+    }
+
+    /* =====================================================================
+       Right Main Detail Pane (~77% width in Landscape, Independent Scroll)
+       ===================================================================== */
+    .main-pane {
+      flex: 1;
+      min-width: 0;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: var(--ios-bg);
+      overflow: hidden;
+    }
+
+    /* Minimal Top Bar (50px height in Landscape) */
+    .main-topbar {
+      height: calc(50px + var(--safe-top));
+      padding: var(--safe-top) calc(14px + var(--safe-right)) 0 14px;
+      background: rgba(20, 20, 22, 0.92);
+      border-bottom: 1px solid var(--ios-sep);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-shrink: 0;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 20;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .drawer-menu-btn {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 48px;
+      padding: 0 13px;
+      background: var(--ios-secondary);
+      color: var(--text-white);
+      border: 1px solid var(--ios-sep-strong);
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .drawer-menu-btn:active {
+      background: var(--ios-tertiary);
+    }
+
+    .topbar-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-white);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .anchor-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-height: 48px;
+      padding: 0 13px;
+      background: var(--ios-blue-dim);
+      color: #64D2FF;
+      border: 1px solid rgba(10, 132, 255, 0.45);
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    .anchor-pill-btn:active {
+      background: rgba(10, 132, 255, 0.32);
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .completed-toggle-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 5px;
-      background: var(--bg-card);
-      color: var(--text-main);
-      border: 1px solid var(--border-dim);
-      border-radius: var(--radius-sm);
-      padding: 6px 11px;
-      min-height: 38px;
-      font-size: 12.5px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s, transform 0.1s;
-    }
-
-    .hud-btn:hover {
-      background: var(--bg-card-hover);
-      border-color: var(--border-bright);
-    }
-
-    .hud-btn:active {
-      transform: scale(0.97);
-    }
-
-    .progress-stat {
-      font-size: 12.5px;
-      color: var(--text-sub);
-      background: var(--bg-deep);
-      border: 1px solid var(--border-dim);
-      padding: 6px 10px;
-      border-radius: var(--radius-sm);
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-    }
-
-    /* Chapter Axis Strip */
-    .chapter-axis {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      overflow-x: auto;
-      padding-bottom: 2px;
-      scrollbar-width: none;
-    }
-
-    .chapter-axis::-webkit-scrollbar {
-      display: none;
-    }
-
-    .axis-arrow {
-      color: var(--text-muted);
-      font-size: 12px;
-      flex-shrink: 0;
-      padding: 0 1px;
-    }
-
-    .axis-node {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: var(--bg-card);
-      color: var(--text-sub);
-      border: 1px solid var(--border-dim);
-      border-radius: var(--radius-sm);
-      padding: 7px 11px;
-      min-height: 42px;
-      font-size: 13px;
+      min-height: 48px;
+      padding: 0 14px;
+      background: var(--ios-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--ios-sep-strong);
+      border-radius: 999px;
+      font-size: 14px;
       font-weight: 700;
-      white-space: nowrap;
       cursor: pointer;
-      flex-shrink: 0;
+      white-space: nowrap;
       transition: all 0.15s;
     }
 
-    .axis-node .chap-num {
-      font-size: 11px;
-      padding: 1px 5px;
-      border-radius: 4px;
-      background: rgba(148, 163, 184, 0.14);
-      color: var(--text-main);
+    .completed-toggle-btn.is-showing {
+      background: var(--ios-blue-dim);
+      color: #64D2FF;
+      border-color: var(--ios-blue);
     }
 
-    .axis-node.active {
-      background: var(--neon-cyan-dim);
-      color: var(--neon-cyan);
-      border-color: var(--neon-cyan);
-      box-shadow: 0 0 12px rgba(45, 212, 191, 0.18);
+    .completed-toggle-btn:active {
+      transform: scale(0.98);
     }
 
-    .axis-node.active .chap-num {
-      background: var(--neon-cyan);
-      color: #061214;
+    /* Quick View Switcher Pills (Portrait < 900px) */
+    .portrait-quick-tabs {
+      display: none;
+      align-items: center;
+      gap: 6px;
     }
 
-    .axis-node.has-anchor::after {
-      content: "📍";
-      font-size: 12px;
+    .quick-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      min-height: 48px;
+      padding: 0 13px;
+      border-radius: 999px;
+      border: 1px solid var(--ios-sep-strong);
+      background: var(--ios-card);
+      color: var(--text-primary);
+      font-size: 14.5px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
     }
 
-    .axis-node.red-light {
-      background: var(--neon-red-dim);
-      color: #fca5a5;
-      border-color: rgba(239, 68, 68, 0.55);
+    .quick-tab-btn.active {
+      background: var(--ios-blue);
+      border-color: var(--ios-blue);
+      color: var(--text-white);
     }
 
-    .axis-node.red-light.active {
-      background: rgba(239, 68, 68, 0.28);
-      color: #fecaca;
-      border-color: var(--neon-red-strong);
-      box-shadow: 0 0 14px rgba(239, 68, 68, 0.32);
-    }
-
-    .axis-pair-slash {
-      color: var(--neon-amber);
-      font-weight: 800;
-      font-size: 14px;
-      flex-shrink: 0;
-      padding: 0 1px;
-    }
-
-    .pulse-red {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--neon-red-strong);
-      box-shadow: 0 0 8px var(--neon-red-strong);
-      animation: pulseGlow 1.8s infinite ease-in-out;
-    }
-
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.45; transform: scale(0.82); }
-    }
-
-    /* Main Split Grid */
-    .main-grid {
+    /* Main Scrollable Content Area */
+    .main-scroll {
       flex: 1;
-      min-height: 0;
-      display: grid;
-      grid-template-columns: 1.22fr 0.98fr;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 10px calc(14px + var(--safe-right)) calc(18px + var(--safe-bottom)) 14px;
+      display: flex;
+      flex-direction: column;
       gap: 10px;
     }
 
-    .column-panel {
-      background: var(--bg-panel);
-      border: 1px solid var(--border-dim);
-      border-radius: var(--radius-lg);
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    .panel-header {
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border-dim);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      background: rgba(22, 29, 41, 0.65);
-      flex-shrink: 0;
-    }
-
-    .panel-title {
-      margin: 0;
-      font-size: 15px;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--text-main);
-    }
-
-    .panel-subtitle {
-      font-size: 12px;
-      color: var(--text-sub);
-    }
-
-    .panel-scroll {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 11px;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .panel-scroll::-webkit-scrollbar {
+    .main-scroll::-webkit-scrollbar {
       width: 6px;
     }
 
-    .panel-scroll::-webkit-scrollbar-thumb {
-      background: #28354a;
+    .main-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.18);
       border-radius: 3px;
     }
 
-    /* Banner Alerts inside Left Panel */
-    .chapter-banner {
-      background: linear-gradient(135deg, rgba(45, 212, 191, 0.1), rgba(22, 29, 41, 0.9));
-      border: 1px solid rgba(45, 212, 191, 0.32);
-      border-radius: var(--radius-md);
-      padding: 11px 13px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .chapter-banner.is-red {
-      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(28, 19, 24, 0.95));
-      border-color: var(--neon-red-strong);
-    }
-
-    .chapter-banner-title {
-      font-size: 15px;
-      font-weight: 800;
-      color: var(--neon-cyan);
+    /* Concise 1-Line Chapter Subtitle Bar (Replaces bulky summary box) */
+    .chapter-subbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 10px;
+      padding: 2px 4px;
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.4;
     }
 
-    .chapter-banner.is-red .chapter-banner-title {
-      color: #fca5a5;
+    .chapter-subbar.is-red {
+      color: #FF6961;
+      font-weight: 600;
     }
 
-    .chapter-banner-desc {
-      font-size: 13px;
-      line-height: 1.55;
-      color: var(--text-main);
-    }
-
-    /* Camp Cards */
-    .camp-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-dim);
-      border-radius: var(--radius-md);
+    .chapter-subbar-text {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
       overflow: hidden;
-      transition: border-color 0.2s;
+      text-overflow: ellipsis;
+    }
+
+    .chapter-subbar-text strong {
+      color: var(--ios-amber);
+      font-weight: 700;
+    }
+
+    .chapter-subbar.is-red .chapter-subbar-text strong {
+      color: #FF8A80;
+    }
+
+    /* Portrait Auxiliary Sub-Actions (Anchor + Show Completed in Portrait) */
+    .portrait-sub-actions {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* =====================================================================
+       Camp Grouped Cards & High-Contrast 18px / 16px Tactical Steps
+       ===================================================================== */
+    .camp-card {
+      background: var(--ios-card);
+      border: 1px solid var(--ios-sep);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      flex-shrink: 0;
     }
 
     .camp-card.is-anchored {
-      border-color: var(--neon-cyan);
-      box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.28), 0 4px 16px rgba(0, 0, 0, 0.35);
+      border-color: rgba(10, 132, 255, 0.65);
+      box-shadow: 0 0 0 1px rgba(10, 132, 255, 0.25);
     }
 
     .camp-header {
-      padding: 11px 13px;
+      min-height: 50px;
+      padding: 4px 12px 4px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 10px;
       cursor: pointer;
-      background: rgba(255, 255, 255, 0.015);
-      min-height: 50px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .camp-header:active {
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .camp-header-left {
@@ -469,79 +646,83 @@
       align-items: center;
       gap: 9px;
       min-width: 0;
+      flex: 1;
     }
 
     .camp-chevron {
-      font-size: 12px;
-      color: var(--text-sub);
-      transition: transform 0.2s;
+      font-size: 13px;
+      color: var(--text-secondary);
+      transition: transform 0.18s ease;
       width: 16px;
       text-align: center;
+      flex-shrink: 0;
     }
 
     .camp-card.expanded .camp-chevron {
       transform: rotate(90deg);
-      color: var(--neon-cyan);
+      color: var(--ios-blue);
     }
 
     .camp-name {
-      font-size: 14.5px;
+      font-size: 17px;
       font-weight: 800;
-      color: var(--text-main);
+      color: var(--text-white);
+      line-height: 1.3;
     }
 
     .camp-card.is-anchored .camp-name {
-      color: var(--neon-cyan);
+      color: #64D2FF;
     }
 
     .camp-tag {
-      font-size: 11.5px;
-      padding: 2px 7px;
+      font-size: 12.5px;
+      padding: 2px 8px;
       border-radius: 999px;
       font-weight: 700;
-      background: rgba(148, 163, 184, 0.15);
-      color: var(--text-sub);
+      background: var(--ios-secondary);
+      color: var(--text-secondary);
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .camp-tag.supply {
-      background: var(--neon-amber-dim);
-      color: var(--neon-amber);
+      background: var(--ios-amber-dim);
+      color: var(--ios-amber);
     }
 
     .camp-tag.warn {
-      background: var(--neon-red-dim);
-      color: #fca5a5;
+      background: var(--ios-red-dim);
+      color: #FF6961;
     }
 
     .anchor-btn {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 4px;
-      padding: 6px 10px;
-      min-height: 36px;
+      min-height: 48px;
+      padding: 0 13px;
       border-radius: var(--radius-sm);
-      border: 1px solid var(--border-bright);
-      background: var(--bg-deep);
-      color: var(--text-sub);
-      font-size: 12px;
+      border: 1px solid var(--ios-sep-strong);
+      background: var(--ios-secondary);
+      color: var(--text-primary);
+      font-size: 13.5px;
       font-weight: 700;
       cursor: pointer;
       flex-shrink: 0;
+      white-space: nowrap;
     }
 
     .anchor-btn.active {
-      background: var(--neon-cyan);
-      border-color: var(--neon-cyan);
-      color: #041311;
+      background: var(--ios-blue);
+      border-color: var(--ios-blue);
+      color: var(--text-white);
     }
 
     .camp-body {
       display: none;
-      padding: 4px 13px 13px 13px;
-      border-top: 1px solid rgba(38, 50, 70, 0.65);
       flex-direction: column;
-      gap: 9px;
+      border-top: 1px solid var(--ios-sep);
     }
 
     .camp-card.expanded .camp-body {
@@ -549,74 +730,77 @@
     }
 
     .route-note {
-      font-size: 13px;
-      line-height: 1.55;
-      color: #cbd5e1;
-      background: rgba(9, 12, 16, 0.55);
-      border-left: 3px solid var(--neon-blue);
-      padding: 8px 11px;
-      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-      margin-top: 6px;
+      font-size: 15.5px;
+      line-height: 1.48;
+      color: var(--text-primary);
+      background: var(--ios-secondary);
+      border-left: 4px solid var(--ios-amber);
+      padding: 7px 13px;
+      border-bottom: 1px solid var(--ios-sep);
     }
 
-    /* Checkable Tactical Items */
+    .route-note strong {
+      color: var(--ios-amber);
+    }
+
+    /* Checkable Tactical Items (iOS Settings Table Rows) */
     .check-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      margin-top: 4px;
     }
 
     .check-item {
       display: flex;
       align-items: flex-start;
-      gap: 11px;
-      padding: 11px 12px;
-      border-radius: var(--radius-sm);
-      background: var(--bg-elevated);
-      border: 1px solid var(--border-dim);
+      gap: 12px;
+      min-height: 52px;
+      padding: 9px 14px;
+      background: var(--ios-card);
+      border-bottom: 1px solid var(--ios-sep);
       cursor: pointer;
-      min-height: 50px;
-      transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+      transition: background 0.12s;
+    }
+
+    .check-item:last-child {
+      border-bottom: none;
     }
 
     .check-item:active {
-      transform: scale(0.992);
+      background: var(--ios-secondary);
     }
 
     .check-item.checked {
-      background: rgba(17, 24, 35, 0.72);
-      border-color: rgba(52, 211, 153, 0.35);
+      background: rgba(28, 28, 30, 0.6);
     }
 
     .check-box {
-      width: 24px;
-      height: 24px;
-      border-radius: 6px;
-      border: 2px solid var(--border-bright);
-      background: var(--bg-deep);
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid rgba(235, 235, 245, 0.38);
+      background: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      margin-top: 1px;
-      font-size: 14px;
+      margin-top: 2px;
+      font-size: 15px;
       font-weight: 900;
       color: transparent;
-      transition: all 0.15s;
+      transition: all 0.15s ease;
     }
 
     .check-item.checked .check-box {
-      background: var(--neon-green);
-      border-color: var(--neon-green);
-      color: #04160f;
+      background: var(--ios-green);
+      border-color: var(--ios-green);
+      color: #000000;
     }
 
     .check-content {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
       min-width: 0;
     }
 
@@ -624,109 +808,242 @@
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 7px;
     }
 
     .type-pill {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 800;
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 2px 7px;
+      border-radius: 5px;
       letter-spacing: 0.3px;
+      flex-shrink: 0;
     }
 
     .type-pill.boss {
-      background: var(--neon-red-dim);
-      color: #fca5a5;
-      border: 1px solid rgba(239, 68, 68, 0.4);
+      background: var(--ios-red-dim);
+      color: #FF6961;
+      border: 1px solid rgba(255, 69, 58, 0.42);
     }
 
     .type-pill.gear {
-      background: var(--neon-amber-dim);
-      color: var(--neon-amber);
-      border: 1px solid rgba(251, 191, 36, 0.38);
+      background: var(--ios-amber-dim);
+      color: var(--ios-amber);
+      border: 1px solid rgba(255, 214, 10, 0.38);
     }
 
     .type-pill.route {
-      background: var(--neon-cyan-dim);
-      color: var(--neon-cyan);
-      border: 1px solid rgba(45, 212, 191, 0.35);
+      background: var(--ios-blue-dim);
+      color: #64D2FF;
+      border: 1px solid rgba(10, 132, 255, 0.42);
     }
 
     .type-pill.quest {
-      background: var(--neon-purple-dim);
-      color: var(--neon-purple);
-      border: 1px solid rgba(192, 132, 252, 0.38);
+      background: var(--ios-purple-dim);
+      color: #DA8FFF;
+      border: 1px solid rgba(191, 90, 242, 0.42);
     }
 
+    /* Living Room Spec: Step Title 18px Bold, Body 16px #EBEBF5 (line-height 1.55) */
     .check-title {
-      font-size: 14px;
+      font-size: 18px;
       font-weight: 700;
-      color: var(--text-main);
-      line-height: 1.35;
+      color: var(--text-white);
+      line-height: 1.32;
     }
 
     .check-item.checked .check-title {
       text-decoration: line-through;
-      color: var(--text-sub);
+      color: rgba(235, 235, 245, 0.48);
     }
 
     .check-detail {
-      font-size: 12.8px;
+      font-size: 16px;
       line-height: 1.55;
-      color: #b6c4d6;
+      color: var(--text-primary);
+    }
+
+    .check-detail strong {
+      color: var(--text-white);
+      font-weight: 700;
     }
 
     .check-item.checked .check-detail {
-      color: var(--text-muted);
+      color: rgba(235, 235, 245, 0.42);
+    }
+
+    .check-item.checked .check-detail strong {
+      color: rgba(235, 235, 245, 0.52);
     }
 
     /* Inline Tactical Callout Tags */
     .key-blue {
-      color: var(--neon-blue);
-      background: var(--neon-blue-dim);
-      padding: 1px 5px;
-      border-radius: 4px;
+      color: #64D2FF;
+      background: var(--ios-blue-dim);
+      padding: 1px 6px;
+      border-radius: 5px;
       font-weight: 700;
     }
 
     .key-purple {
-      color: var(--neon-purple);
-      background: var(--neon-purple-dim);
-      padding: 1px 5px;
-      border-radius: 4px;
+      color: #DA8FFF;
+      background: var(--ios-purple-dim);
+      padding: 1px 6px;
+      border-radius: 5px;
       font-weight: 700;
     }
 
     .key-amber {
-      color: var(--neon-amber);
-      background: var(--neon-amber-dim);
-      padding: 1px 5px;
-      border-radius: 4px;
+      color: var(--ios-amber);
+      background: var(--ios-amber-dim);
+      padding: 1px 6px;
+      border-radius: 5px;
       font-weight: 700;
     }
 
     .key-red {
-      color: #fca5a5;
-      background: var(--neon-red-dim);
-      padding: 1px 5px;
-      border-radius: 4px;
+      color: #FF6961;
+      background: var(--ios-red-dim);
+      padding: 1px 6px;
+      border-radius: 5px;
       font-weight: 700;
     }
 
-    /* Right Column: DualSense Edge & Combat Cards */
-    .preset-Grid {
+    /* All Camps Completed Empty State Card */
+    .all-done-card {
+      background: var(--ios-card);
+      border: 1px solid rgba(48, 209, 88, 0.4);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .all-done-text {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--ios-green);
+    }
+
+    /* =====================================================================
+       Dedicated Settings Sub-Views (Combat / Controller / Backup)
+       ===================================================================== */
+    .subview-panel {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .subview-panel.active {
+      display: flex;
+    }
+
+    .ios-card-section {
+      background: var(--ios-card);
+      border: 1px solid var(--ios-sep);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ios-card-section.amber-border {
+      border-color: rgba(255, 214, 10, 0.45);
+    }
+
+    .ios-card-header {
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.025);
+      border-bottom: 1px solid var(--ios-sep);
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-white);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ios-card-header.amber {
+      color: var(--ios-amber);
+    }
+
+    .ios-row-item {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--ios-sep);
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .ios-row-item:last-child {
+      border-bottom: none;
+    }
+
+    .ios-row-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-white);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ios-row-desc {
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--text-primary);
+    }
+
+    .ios-row-desc strong {
+      color: var(--text-white);
+    }
+
+    /* Flash Formula Grid */
+    .flash-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .flash-box {
+      background: var(--ios-secondary);
+      border-radius: var(--radius-sm);
+      padding: 13px 14px;
+      border: 1px solid var(--ios-sep);
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .flash-box-title {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .flash-box-desc {
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--text-primary);
+    }
+
+    /* DualSense Edge Presets & SVG Stage */
+    .preset-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 7px;
+      gap: 10px;
+      padding: 14px 14px 0;
     }
 
     .preset-btn {
-      background: var(--bg-card);
-      border: 1px solid var(--border-dim);
-      border-radius: var(--radius-md);
-      padding: 9px 8px;
-      min-height: 56px;
+      background: var(--ios-secondary);
+      border: 1px solid var(--ios-sep-strong);
+      border-radius: var(--radius-sm);
+      padding: 10px 8px;
+      min-height: 58px;
       cursor: pointer;
       display: flex;
       flex-direction: column;
@@ -738,125 +1055,223 @@
     }
 
     .preset-btn .p-name {
-      font-size: 13px;
+      font-size: 15.5px;
       font-weight: 800;
-      color: var(--text-main);
+      color: var(--text-white);
     }
 
     .preset-btn .p-sub {
-      font-size: 11px;
-      color: var(--text-sub);
+      font-size: 13px;
+      color: var(--text-secondary);
     }
 
     .preset-btn.active {
-      background: var(--neon-cyan-dim);
-      border-color: var(--neon-cyan);
-      box-shadow: 0 0 12px rgba(45, 212, 191, 0.16);
+      background: var(--ios-blue);
+      border-color: var(--ios-blue);
     }
 
-    .preset-btn.active .p-name {
-      color: var(--neon-cyan);
-    }
-
+    .preset-btn.active .p-name,
     .preset-btn.active .p-sub {
-      color: #cbd5e1;
+      color: var(--text-white);
     }
 
     .controller-stage {
-      background: radial-gradient(circle at 50% 48%, rgba(45, 212, 191, 0.08), rgba(9, 12, 16, 0.92) 72%);
-      border: 1px solid var(--border-dim);
-      border-radius: var(--radius-md);
-      padding: 10px 10px 8px;
+      padding: 12px 14px 14px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
     }
 
     .controller-svg {
       width: 100%;
-      max-width: 500px;
+      max-width: 580px;
       height: auto;
       display: block;
+      background: #141416;
+      border: 1px solid var(--ios-sep);
+      border-radius: var(--radius-sm);
+      padding: 6px;
     }
 
     .preset-desc-bar {
       width: 100%;
-      background: rgba(22, 29, 41, 0.9);
-      border: 1px solid rgba(45, 212, 191, 0.3);
-      border-radius: var(--radius-sm);
-      padding: 8px 11px;
-      font-size: 12.8px;
-      line-height: 1.5;
-      color: var(--text-main);
+      background: var(--ios-secondary);
+      border-left: 4px solid var(--ios-blue);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 11px 14px;
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--text-primary);
     }
 
-    .tip-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-dim);
-      border-radius: var(--radius-md);
-      padding: 11px 13px;
+    .preset-desc-bar strong {
+      color: var(--text-white);
+    }
+
+    /* Backup & Restore Action Rows */
+    .backup-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .backup-stat-item {
+      background: var(--ios-secondary);
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      gap: 3px;
     }
 
-    .tip-card.highlight-amber {
-      border-color: rgba(251, 191, 36, 0.45);
-      background: linear-gradient(135deg, rgba(251, 191, 36, 0.09), rgba(22, 29, 41, 0.95));
+    .backup-stat-label {
+      font-size: 13.5px;
+      color: var(--text-secondary);
     }
 
-    .tip-title {
-      font-size: 13.8px;
+    .backup-stat-val {
+      font-size: 17px;
       font-weight: 800;
-      color: var(--neon-amber);
+      color: var(--text-white);
+    }
+
+    .ios-action-btn {
+      width: 100%;
+      min-height: 52px;
+      padding: 10px 16px;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--ios-sep);
+      color: var(--ios-blue);
+      font-size: 17px;
+      font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 6px;
+      justify-content: space-between;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.12s;
     }
 
-    .tip-title.cyan {
-      color: var(--neon-cyan);
+    .ios-action-btn:last-child {
+      border-bottom: none;
     }
 
-    .tip-body {
-      font-size: 12.8px;
-      line-height: 1.58;
-      color: #cbd5e1;
+    .ios-action-btn:active {
+      background: var(--ios-secondary);
+    }
+
+    .ios-action-btn.danger {
+      color: var(--ios-red);
+    }
+
+    .ios-action-sub {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    /* iOS Native-Style Confirmation Modal */
+    .ios-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.68);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .ios-modal-overlay.open {
+      display: flex;
+    }
+
+    .ios-modal-box {
+      width: 100%;
+      max-width: 340px;
+      background: #252528;
+      border: 1px solid var(--ios-sep-strong);
+      border-radius: 14px;
+      overflow: hidden;
+      text-align: center;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.65);
+    }
+
+    .ios-modal-body {
+      padding: 20px 18px 16px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
 
-    .skill-tier {
-      background: var(--bg-deep);
-      border: 1px solid var(--border-dim);
-      border-radius: var(--radius-sm);
-      padding: 7px 10px;
+    .ios-modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-white);
     }
 
-    .skill-tier strong {
-      color: var(--neon-cyan);
+    .ios-modal-desc {
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text-primary);
+    }
+
+    .ios-modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-top: 1px solid var(--ios-sep-strong);
+    }
+
+    .modal-btn {
+      min-height: 48px;
+      background: transparent;
+      border: none;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--ios-blue);
+      cursor: pointer;
+    }
+
+    .modal-btn:first-child {
+      border-right: 1px solid var(--ios-sep-strong);
+    }
+
+    .modal-btn.danger {
+      color: var(--ios-red);
+      font-weight: 700;
+    }
+
+    .modal-btn:active {
+      background: rgba(255, 255, 255, 0.08);
     }
 
     /* Toast Notification */
     .hud-toast {
       position: fixed;
-      bottom: 18px;
+      bottom: calc(20px + var(--safe-bottom));
       left: 50%;
       transform: translateX(-50%) translateY(20px);
-      background: #102422;
-      color: var(--neon-cyan);
-      border: 1px solid var(--neon-cyan);
+      background: #2C2C2E;
+      color: var(--text-white);
+      border: 1px solid var(--ios-sep-strong);
       border-radius: 999px;
-      padding: 9px 18px;
-      font-size: 13.5px;
+      padding: 10px 20px;
+      font-size: 15px;
       font-weight: 700;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.72);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.22s, transform 0.22s;
       z-index: 999;
+      white-space: nowrap;
+      max-width: 92vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .hud-toast.show {
@@ -864,246 +1279,415 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    /* Portrait or Small Screen Fallback */
-    @media (max-width: 900px) {
-      html, body {
-        height: auto;
-        min-height: 100dvh;
-        overflow-y: auto;
+    /* =====================================================================
+       Portrait & Narrow Breakpoint (< 900px, iPad Air 4 Portrait 820x1180)
+       ===================================================================== */
+    @media (max-width: 899px) {
+      .ios-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 290px;
+        max-width: 84vw;
+        transform: translateX(-104%);
+        transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+        box-shadow: 12px 0 36px rgba(0, 0, 0, 0.75);
       }
-      .hud-shell {
-        height: auto;
-        min-height: 100dvh;
+
+      .ios-sidebar.drawer-open {
+        transform: translateX(0);
       }
-      .main-grid {
+
+      .main-topbar {
+        height: auto;
+        min-height: calc(56px + var(--safe-top));
+        padding: calc(4px + var(--safe-top)) calc(12px + var(--safe-right)) 4px calc(12px + var(--safe-left));
+        flex-wrap: wrap;
+      }
+
+      .drawer-menu-btn {
+        display: inline-flex;
+      }
+
+      .topbar-anchor-desktop,
+      .topbar-completed-desktop {
+        display: none !important;
+      }
+
+      .portrait-quick-tabs {
+        display: flex;
+      }
+
+      .portrait-sub-actions {
+        display: flex;
+      }
+
+      .chapter-subbar-text {
+        white-space: normal;
+      }
+
+      .flash-grid,
+      .backup-stat-grid {
         grid-template-columns: 1fr;
       }
-      .panel-scroll {
-        max-height: none;
-        overflow-y: visible;
+    }
+
+    @media (max-width: 600px) {
+      .preset-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar-title {
+        display: none;
       }
     }
   </style>
 </head>
 <body>
-  <div class="hud-shell">
-    <!-- Top Bar & Full-Width 10-Chapter + Red-Light Warning Axis -->
-    <header class="top-deck">
-      <div class="top-bar">
-        <div class="brand-group">
-          <div class="brand-badge">
-            <span class="brand-dot"></span>
-            <span>《劍星》戰術板 HUD</span>
-          </div>
-          <button type="button" id="anchorJumpBtn" class="anchor-jump-btn" title="點擊立即跳回目前錨定營地">
-            <span>📍 錨點：</span>
-            <span id="anchorLabelText">艾多城7號 — 施工區</span>
-          </button>
-          <div id="overallProgress" class="progress-stat">完成 2 / 0</div>
-        </div>
+  <div class="split-shell">
+    <!-- Backdrop for Portrait Slide-over Drawer -->
+    <div id="drawerBackdrop" class="drawer-backdrop" aria-hidden="true"></div>
 
-        <div class="top-actions">
-          <button type="button" id="lilyToggleBtn" class="lily-toggle is-warn" role="switch" aria-checked="false">
-            <span id="lilyStatusIcon">🌸 百合進度條 100% 檢核：未滿</span>
-            <span class="lily-pill"></span>
+    <!-- Left Navigation Sidebar (270px Fixed in Landscape / Slide-over in Portrait) -->
+    <aside id="iosSidebar" class="ios-sidebar" aria-label="章節與系統設定導覽欄">
+      <!-- 1. Top Minimal Info Card -->
+      <div class="sidebar-info-card">
+        <div class="sidebar-brand-row">
+          <span class="sidebar-app-title">《劍星》戰術板</span>
+          <span id="overallProgress" class="progress-badge">2/41</span>
+        </div>
+        <button type="button" id="lilyToggleBtn" class="lily-switch-row" role="switch" aria-checked="false">
+          <span class="lily-label-wrap">
+            <span class="lily-main-label">🌸 百合 100%</span>
+            <span id="lilyStatusText" class="lily-sub-label">未滿（紅燈1前必檢核）</span>
+          </span>
+          <span class="ios-switch" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <!-- 2. Chapters & Red-Light Checkpoints List -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-header">攻略章節與紅燈</div>
+        <nav id="chapterNavList" class="ios-group-list" aria-label="全10章與紅燈不可逆檢核清單"></nav>
+      </div>
+
+      <!-- 3. Combat Quick-Ref & System Settings Tabs -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-header">戰鬥速查與系統設定</div>
+        <div class="ios-group-list" role="navigation" aria-label="戰鬥速查與系統設定">
+          <button type="button" class="nav-row settings-nav-btn" data-view="combat">
+            <span class="nav-row-left">
+              <span class="nav-row-title">⚡ 色光公式與必點技能</span>
+            </span>
           </button>
-          <button type="button" id="exportBtn" class="hud-btn">⬇ 匯出進度 JSON</button>
-          <button type="button" id="importBtn" class="hud-btn">⬆ 匯入還原</button>
-          <input type="file" id="importFileInput" accept="application/json,.json" style="display:none" />
-          <button type="button" id="fullscreenBtn" class="hud-btn" title="切換全螢幕">⛶ 全螢幕</button>
+          <button type="button" class="nav-row settings-nav-btn" data-view="controller">
+            <span class="nav-row-left">
+              <span class="nav-row-title">🎮 Edge 手把與寶箱設定</span>
+            </span>
+          </button>
+          <button type="button" class="nav-row settings-nav-btn" data-view="backup">
+            <span class="nav-row-left">
+              <span class="nav-row-title">💾 進度備份與還原</span>
+            </span>
+          </button>
         </div>
       </div>
 
-      <!-- Full-Width 10-Chapter & Red-Light Axis -->
-      <nav id="chapterAxis" class="chapter-axis" aria-label="全10章推進與紅燈預警軸"></nav>
-    </header>
+      <!-- 4. Version Stamp -->
+      <div class="sidebar-version">v2.0 iPadOS Split-View</div>
+    </aside>
 
-    <!-- Below: Left & Right Dual Columns -->
-    <main class="main-grid">
-      <!-- Left Column: Camp Route, Core Upgrades & Boss Breakdown -->
-      <section class="column-panel" aria-label="營地順路核心與必打戰鬥支線勾選單">
-        <div class="panel-header">
-          <h2 id="leftPanelTitle" class="panel-title">1. 艾多城7號 — 營地推進與頭目拆招</h2>
-          <span class="panel-subtitle">略過純跑腿收集・點擊單指打勾即存檔</span>
+    <!-- Right Main Content Area (~77% Width in Landscape) -->
+    <main class="main-pane">
+      <!-- Minimal 50px Top Bar -->
+      <header class="main-topbar">
+        <div class="topbar-left">
+          <button type="button" id="drawerOpenBtn" class="drawer-menu-btn" aria-label="開啟章節與設定選單">
+            <span>☰ 章節與設定</span>
+          </button>
+          <h1 id="mainTopTitle" class="topbar-title">1. 艾多城7號（Eidos 7）</h1>
+          <button type="button" id="anchorJumpBtnDesktop" class="anchor-pill-btn topbar-anchor-desktop" title="點擊立即跳回目前營地錨點">
+            <span>📍</span>
+            <span id="anchorLabelDesktop">艾多城7號 — 施工區</span>
+          </button>
         </div>
-        <div id="leftScroll" class="panel-scroll"></div>
-      </section>
 
-      <!-- Right Column: DualSense Edge Visualized Setup & Effort-Saving Tips -->
-      <section class="column-panel" aria-label="DualSense Edge 視覺化配置與省力戰鬥錦囊">
-        <div class="panel-header">
-          <h2 class="panel-title">🎮 DualSense Edge 省力配置 ＆ 實戰錦囊</h2>
-          <span class="panel-subtitle">點擊背鍵流派即時切換圖示</span>
+        <div class="topbar-right">
+          <button type="button" id="completedToggleDesktop" class="completed-toggle-btn topbar-completed-desktop" style="display:none">
+            顯示已完成營地（0）
+          </button>
+
+          <!-- Portrait Quick Switch Pills (< 900px) -->
+          <div class="portrait-quick-tabs" role="tablist" aria-label="快速切換分頁">
+            <button type="button" class="quick-tab-btn active" data-quick-view="guide">📍 攻略</button>
+            <button type="button" class="quick-tab-btn" data-quick-view="combat">⚡ 色光</button>
+            <button type="button" class="quick-tab-btn" data-quick-view="controller">🎮 手把</button>
+          </div>
         </div>
-        <div class="panel-scroll">
-          <!-- Back-Paddle 3 Presets Switcher -->
-          <div class="preset-Grid" role="tablist" aria-label="背鍵流派切換">
-            <button type="button" class="preset-btn" data-preset="heal">
-              <span class="p-name">① 移動喝水流</span>
-              <span class="p-sub">故事首推：左↑ / 右○</span>
+      </header>
+
+      <!-- Independent Scroll Container -->
+      <div id="mainScroll" class="main-scroll">
+        <!-- View 1: Chapter Tactical Guide -->
+        <section id="viewGuide" class="subview-panel active" aria-label="章節推進與營地檢核">
+          <div class="portrait-sub-actions">
+            <button type="button" id="anchorJumpBtnPortrait" class="anchor-pill-btn">
+              <span>📍 錨點：</span>
+              <span id="anchorLabelPortrait">艾多城7號 — 施工區</span>
             </button>
-            <button type="button" class="preset-btn" data-preset="parry">
-              <span class="p-name">② 雙中指打鐵流</span>
-              <span class="p-sub">招架特化：左L1 / 右○</span>
-            </button>
-            <button type="button" class="preset-btn" data-preset="sprint">
-              <span class="p-name">③ 省力跑圖流</span>
-              <span class="p-sub">探索護指：左L3 / 右○</span>
+            <button type="button" id="completedTogglePortrait" class="completed-toggle-btn" style="display:none">
+              顯示已完成營地（0）
             </button>
           </div>
-
-          <!-- Crisp SVG DualSense Edge Blueprint -->
-          <div class="controller-stage">
-            <svg class="controller-svg" viewBox="0 0 560 305" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="DualSense Edge 視覺化設定圖">
-              <defs>
-                <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="2.5" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-
-              <!-- Top Hardware Trigger Stop Callout Banner -->
-              <rect x="135" y="6" width="290" height="28" rx="7" fill="#1b2434" stroke="#fbbf24" stroke-width="1.3" />
-              <text x="280" y="24" text-anchor="middle" fill="#fbbf24" font-size="12.5" font-weight="800">
-                ⚙ L2 / R2 實體滑桿：調至「最短鍵程（最上段）」
-              </text>
-              <line x1="175" y1="34" x2="152" y2="54" stroke="#fbbf24" stroke-width="1.3" stroke-dasharray="3 3" />
-              <line x1="385" y1="34" x2="408" y2="54" stroke="#fbbf24" stroke-width="1.3" stroke-dasharray="3 3" />
-
-              <!-- L2 / R2 & L1 / R1 Bumpers -->
-              <path d="M126 64 Q152 46 188 55 L192 72 L124 76 Z" fill="#182232" stroke="#fbbf24" stroke-width="1.6" />
-              <text x="157" y="67" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="800">L2 短</text>
-
-              <path d="M434 64 Q408 46 372 55 L368 72 L436 76 Z" fill="#182232" stroke="#fbbf24" stroke-width="1.6" />
-              <text x="403" y="67" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="800">R2 短</text>
-
-              <rect id="svgBtnL1" x="120" y="75" width="72" height="20" rx="6" fill="#1f293d" stroke="#475569" stroke-width="1.5" />
-              <text id="svgTxtL1" x="156" y="89" text-anchor="middle" fill="#cbd5e1" font-size="11.5" font-weight="800">L1 招架</text>
-
-              <rect x="368" y="75" width="72" height="20" rx="6" fill="#1f293d" stroke="#475569" stroke-width="1.5" />
-              <text x="404" y="89" text-anchor="middle" fill="#cbd5e1" font-size="11.5" font-weight="800">R1 爆發</text>
-
-              <!-- Controller Main Body Silhouette -->
-              <path d="M122 95
-                       Q94 115 86 168
-                       Q78 222 102 246
-                       Q122 262 146 236
-                       L182 194
-                       L378 194
-                       L414 236
-                       Q438 262 458 246
-                       Q482 222 474 168
-                       Q466 115 438 95 Z"
-                    fill="#131a26" stroke="#3b4d6b" stroke-width="2" />
-
-              <!-- Touchpad -->
-              <path d="M204 96 L356 96 L346 144 Q280 150 214 144 Z" fill="#0d131d" stroke="#2dd4bf" stroke-opacity="0.45" stroke-width="1.4" />
-              <text x="280" y="123" text-anchor="middle" fill="#64748b" font-size="10.5" font-weight="700">DUALSENSE EDGE</text>
-
-              <!-- D-Pad Left -->
-              <!-- Up Button (Heal) -->
-              <rect id="svgBtnUp" x="143" y="110" width="22" height="22" rx="4" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
-              <text id="svgTxtUp" x="154" y="125" text-anchor="middle" fill="#cbd5e1" font-size="12" font-weight="900">↑</text>
-              <!-- Down / Left / Right -->
-              <rect x="143" y="150" width="22" height="20" rx="4" fill="#192231" stroke="#334155" stroke-width="1.2" />
-              <text x="154" y="164" text-anchor="middle" fill="#94a3b8" font-size="11">↓</text>
-              <rect x="121" y="131" width="21" height="19" rx="4" fill="#192231" stroke="#334155" stroke-width="1.2" />
-              <rect x="166" y="131" width="21" height="19" rx="4" fill="#192231" stroke="#334155" stroke-width="1.2" />
-
-              <!-- Right Face Buttons -->
-              <!-- Triangle -->
-              <circle cx="405" cy="118" r="11" fill="#192231" stroke="#475569" stroke-width="1.3" />
-              <text x="405" y="122" text-anchor="middle" fill="#cbd5e1" font-size="11" font-weight="700">△</text>
-              <!-- Square -->
-              <circle cx="381" cy="141" r="11" fill="#192231" stroke="#475569" stroke-width="1.3" />
-              <text x="381" y="145" text-anchor="middle" fill="#cbd5e1" font-size="11" font-weight="700">□</text>
-              <!-- Cross -->
-              <circle cx="405" cy="164" r="11" fill="#192231" stroke="#475569" stroke-width="1.3" />
-              <text x="405" y="168" text-anchor="middle" fill="#cbd5e1" font-size="11" font-weight="700">✕</text>
-              <!-- Circle (Always mapped to Right Back Paddle) -->
-              <circle id="svgBtnCircle" cx="429" cy="141" r="12" fill="rgba(56, 189, 248, 0.24)" stroke="#38bdf8" stroke-width="2" filter="url(#neonGlow)" />
-              <text x="429" y="145" text-anchor="middle" fill="#38bdf8" font-size="12" font-weight="900">○</text>
-
-              <!-- Left Stick (L3 + Quick Curve) -->
-              <circle id="svgBtnL3" cx="218" cy="174" r="22" fill="#0f1520" stroke="#38bdf8" stroke-width="1.8" />
-              <circle cx="218" cy="174" r="13" fill="#1e293b" />
-              <text id="svgTxtL3" x="218" y="178" text-anchor="middle" fill="#e2e8f0" font-size="10.5" font-weight="800">L3</text>
-
-              <!-- Left Stick Quick Sensitivity Callout -->
-              <rect x="6" y="162" width="128" height="36" rx="7" fill="#141e2e" stroke="#38bdf8" stroke-width="1.3" />
-              <text x="70" y="177" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="800">左搖桿靈敏度</text>
-              <text x="70" y="192" text-anchor="middle" fill="#e2e8f0" font-size="11.5" font-weight="800">設為「快速 Quick」</text>
-              <line x1="134" y1="180" x2="195" y2="175" stroke="#38bdf8" stroke-width="1.3" stroke-dasharray="3 3" />
-
-              <!-- Right Stick (R3) -->
-              <circle cx="342" cy="174" r="22" fill="#0f1520" stroke="#475569" stroke-width="1.6" />
-              <circle cx="342" cy="174" r="13" fill="#1e293b" />
-              <text x="342" y="178" text-anchor="middle" fill="#94a3b8" font-size="10.5" font-weight="700">R3</text>
-
-              <!-- Edge Fn Buttons -->
-              <rect x="205" y="201" width="26" height="11" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1" />
-              <text x="218" y="209.5" text-anchor="middle" fill="#94a3b8" font-size="8.5" font-weight="700">Fn</text>
-              <rect x="329" y="201" width="26" height="11" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1" />
-              <text x="342" y="209.5" text-anchor="middle" fill="#94a3b8" font-size="8.5" font-weight="700">Fn</text>
-
-              <!-- Back Paddles (LB Left Back & RB Right Back) Highlight Boxes -->
-              <!-- Left Back Paddle Box -->
-              <path d="M214 218 L188 242" stroke="#2dd4bf" stroke-width="2" />
-              <rect x="20" y="238" width="228" height="58" rx="10" fill="#0f2322" stroke="#2dd4bf" stroke-width="2" filter="url(#neonGlow)" />
-              <text x="134" y="258" text-anchor="middle" fill="#94a3b8" font-size="11.5" font-weight="700">【左背鍵 LB】（左中指撥片）</text>
-              <text id="svgLeftPaddleLabel" x="134" y="283" text-anchor="middle" fill="#2dd4bf" font-size="16" font-weight="900">↑ 方向鍵上（移動補血）</text>
-
-              <!-- Right Back Paddle Box -->
-              <path d="M346 218 L372 242" stroke="#38bdf8" stroke-width="2" />
-              <rect x="312" y="238" width="228" height="58" rx="10" fill="#102030" stroke="#38bdf8" stroke-width="2" filter="url(#neonGlow)" />
-              <text x="426" y="258" text-anchor="middle" fill="#94a3b8" font-size="11.5" font-weight="700">【右背鍵 RB】（右中指撥片）</text>
-              <text id="svgRightPaddleLabel" x="426" y="283" text-anchor="middle" fill="#38bdf8" font-size="16" font-weight="900">○ 閃避（閃現／擊退）</text>
-            </svg>
-
-            <div id="presetDescBar" class="preset-desc-bar"></div>
+          <div id="chapterSubbar" class="chapter-subbar">
+            <div id="chapterSubtitleText" class="chapter-subbar-text"></div>
           </div>
+          <div id="campListContainer" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </section>
 
-          <!-- Effort-Saving Cheat Card 1: TETRASTAR -->
-          <div class="tip-card highlight-amber">
-            <div class="tip-title">🔓 TETRASTAR 侵入補給箱「免倒數」零壓力解法</div>
-            <div class="tip-body">
-              <div>
-                手把按 <strong>Options</strong> ➔ <strong>設定</strong> ➔ <strong>協助工具（Accessibility）</strong> ➔ 開啟 <strong>「停用謎題時間限制」</strong>！開啟後所有方向鍵輸入寶箱與駭入小遊戲<strong>倒數計時永久凍結</strong>，暗房慢按零失誤。
+        <!-- View 2: Flash Formula & High-CP Skills -->
+        <section id="viewCombat" class="subview-panel" aria-label="色光公式與必點技能">
+          <div class="ios-card-section">
+            <div class="ios-card-header">⚡ 頭目四色閃光反應鐵則（看伊芙劍身發光瞬間輸入）</div>
+            <div class="flash-grid">
+              <div class="flash-box">
+                <div class="flash-box-title" style="color:#64D2FF;">🔵 藍光 ➔ 按 ↑ + ○ 閃現繞背</div>
+                <div class="flash-box-desc">頭目閃藍光後<strong>等伊芙劍身亮藍光瞬間</strong>推左搖桿前＋按 ○（右背鍵），直接瞬移至頭目背後強制破招狂砍！</div>
               </div>
-              <div>
-                💡 <strong>護肝加碼</strong>：同頁面可一併開啟<strong>「動作輔助」</strong>與<strong>「簡化 QTE」</strong>，頭目關鍵閃光連段會自動進入慢動作提示，大幅降低手指負擔。
+              <div class="flash-box">
+                <div class="flash-box-title" style="color:#DA8FFF;">🟣 紫光 ➔ 按 ↓ + ○ 擊退斷招</div>
+                <div class="flash-box-desc">頭目閃紫光蓄力時<strong>等劍身亮紫光瞬間</strong>拉左搖桿後＋按 ○（右背鍵），凌空後空翻踹倒頭目並大削黃色平衡點！</div>
+              </div>
+              <div class="flash-box">
+                <div class="flash-box-title" style="color:#FFD60A;">🟡 黃光 ➔ 純按 ○ 閃避拉開</div>
+                <div class="flash-box-desc">代表<strong>不可防禦／不可招架</strong>之範圍砸地、砲擊或遠程抓技，切勿按 L1 硬擋，直接按 ○ 完美閃避或側跑跳開。</div>
+              </div>
+              <div class="flash-box">
+                <div class="flash-box-title" style="color:#FF6961;">🔴 紅光 ➔ L1 招架或貝塔斷招</div>
+                <div class="flash-box-desc">代表<strong>多段瘋狗連擊</strong>（如金剛獸五連捶、貝利亞爾狂斬）。抓節奏按 L1 打鐵，或直接放 <strong>L1+○ 衝擊波</strong>遠距強制斷招！</div>
               </div>
             </div>
           </div>
 
-          <!-- Effort-Saving Cheat Card 2: High-CP Skills & Color Flash Quick Ref -->
-          <div class="tip-card">
-            <div class="tip-title cyan">⚡ 頭目色光反應公式 ＆ 各期高 CP 技能點法</div>
-            <div class="tip-body">
-              <div class="skill-tier">
-                <strong>色光鐵則：</strong>
-                <span class="key-blue">藍光 ＝ 劍閃藍光按 ↑+○ 閃現繞背</span> ｜
-                <span class="key-purple">紫光 ＝ 劍閃紫光按 ↓+○ 擊退斷招</span> ｜
-                <span class="key-amber">黃光 ＝ 不可擋，純按 ○ 閃避</span> ｜
-                <span class="key-red">紅光 ＝ 多段瘋狗連擊（擋或貝塔斷招）</span>
+          <div class="ios-card-section">
+            <div class="ios-card-header">🌲 初／中／後期高 CP 省力技能樹點法</div>
+            <div class="ios-row-item">
+              <div class="ios-row-title" style="color:#30D158;">① 初期必點（艾多城7號 — 施工區至隕石坑）</div>
+              <div class="ios-row-desc">生存線最優先點出<strong>「完美閃避」</strong>、<span class="key-blue">閃現（↑+○）</span>、<span class="key-purple">擊退（↓+○）</span>與<strong>「招架／閃避回貝塔能量」</strong>；攻擊線點出「伏擊」秒殺背對小怪省血瓶。</div>
+            </div>
+            <div class="ios-row-item">
+              <div class="ios-row-title" style="color:#64D2FF;">② 中期主力（廢土 ～ 11號矩陣）</div>
+              <div class="ios-row-desc">生存線點出「雙重跳躍」；貝塔技能集中升級 <strong>L1 + ○（衝擊波：遠距強制震斷頭目紅紫光連段神技）</strong> 與 <strong>L1 + □（破盾斬擊）</strong>。</div>
+            </div>
+            <div class="ios-row-item">
+              <div class="ios-row-title" style="color:#FFD60A;">③ 後期決戰（大沙漠 ～ 巢穴最終戰）</div>
+              <div class="ios-row-desc">爆發技能主升 <strong>R1 + ○（懲戒：超長無敵幀硬吃大招＋強制倒地）</strong>，強化 <strong>L3 + R3 迅馳模式</strong> 破盾傷害；每個營地常備 <strong>2 顆 WB 泵浦（原地復活）</strong> 穩過雙王與最終戰！</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- View 3: DualSense Edge Controller & TETRASTAR Puzzle Settings -->
+        <section id="viewController" class="subview-panel" aria-label="Edge 手把與寶箱設定">
+          <div class="ios-card-section">
+            <div class="ios-card-header">🎮 DualSense Edge 省力硬體配置 ＆ 三大背鍵流派</div>
+
+            <div class="preset-grid" role="tablist" aria-label="背鍵流派即時切換">
+              <button type="button" class="preset-btn" data-preset="heal">
+                <span class="p-name">① 移動喝水流</span>
+                <span class="p-sub">故事首推：左↑ / 右○</span>
+              </button>
+              <button type="button" class="preset-btn" data-preset="parry">
+                <span class="p-name">② 雙中指打鐵流</span>
+                <span class="p-sub">招架特化：左L1 / 右○</span>
+              </button>
+              <button type="button" class="preset-btn" data-preset="sprint">
+                <span class="p-name">③ 省力跑圖流</span>
+                <span class="p-sub">探索護指：左L3 / 右○</span>
+              </button>
+            </div>
+
+            <div class="controller-stage">
+              <svg class="controller-svg" viewBox="0 0 560 305" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="DualSense Edge 視覺化設定圖">
+                <defs>
+                  <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="2.2" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                <!-- Top Hardware Trigger Stop Callout Banner -->
+                <rect x="125" y="6" width="310" height="28" rx="7" fill="#2C2C2E" stroke="#FFD60A" stroke-width="1.4" />
+                <text x="280" y="24" text-anchor="middle" fill="#FFD60A" font-size="12.5" font-weight="800">
+                  ⚙ L2 / R2 實體滑桿：調至「最短鍵程（最上段）」
+                </text>
+                <line x1="175" y1="34" x2="152" y2="54" stroke="#FFD60A" stroke-width="1.3" stroke-dasharray="3 3" />
+                <line x1="385" y1="34" x2="408" y2="54" stroke="#FFD60A" stroke-width="1.3" stroke-dasharray="3 3" />
+
+                <!-- L2 / R2 & L1 / R1 Bumpers -->
+                <path d="M126 64 Q152 46 188 55 L192 72 L124 76 Z" fill="#2C2C2E" stroke="#FFD60A" stroke-width="1.6" />
+                <text x="157" y="67" text-anchor="middle" fill="#FFD60A" font-size="11" font-weight="800">L2 短</text>
+
+                <path d="M434 64 Q408 46 372 55 L368 72 L436 76 Z" fill="#2C2C2E" stroke="#FFD60A" stroke-width="1.6" />
+                <text x="403" y="67" text-anchor="middle" fill="#FFD60A" font-size="11" font-weight="800">R2 短</text>
+
+                <rect id="svgBtnL1" x="120" y="75" width="72" height="20" rx="6" fill="#2C2C2E" stroke="#636366" stroke-width="1.5" />
+                <text id="svgTxtL1" x="156" y="89" text-anchor="middle" fill="#EBEBF5" font-size="11.5" font-weight="800">L1 招架</text>
+
+                <rect x="368" y="75" width="72" height="20" rx="6" fill="#2C2C2E" stroke="#636366" stroke-width="1.5" />
+                <text x="404" y="89" text-anchor="middle" fill="#EBEBF5" font-size="11.5" font-weight="800">R1 爆發</text>
+
+                <!-- Controller Main Body Silhouette -->
+                <path d="M122 95
+                         Q94 115 86 168
+                         Q78 222 102 246
+                         Q122 262 146 236
+                         L182 194
+                         L378 194
+                         L414 236
+                         Q438 262 458 246
+                         Q482 222 474 168
+                         Q466 115 438 95 Z"
+                      fill="#1C1C1E" stroke="#48484A" stroke-width="2" />
+
+                <!-- Touchpad -->
+                <path d="M204 96 L356 96 L346 144 Q280 150 214 144 Z" fill="#141416" stroke="#0A84FF" stroke-opacity="0.55" stroke-width="1.4" />
+                <text x="280" y="123" text-anchor="middle" fill="#8E8E93" font-size="10.5" font-weight="700">DUALSENSE EDGE</text>
+
+                <!-- D-Pad Left -->
+                <rect id="svgBtnUp" x="143" y="110" width="22" height="22" rx="4" fill="#2C2C2E" stroke="#636366" stroke-width="1.5" />
+                <text id="svgTxtUp" x="154" y="125" text-anchor="middle" fill="#EBEBF5" font-size="12" font-weight="900">↑</text>
+                <rect x="143" y="150" width="22" height="20" rx="4" fill="#242426" stroke="#48484A" stroke-width="1.2" />
+                <text x="154" y="164" text-anchor="middle" fill="#8E8E93" font-size="11">↓</text>
+                <rect x="121" y="131" width="21" height="19" rx="4" fill="#242426" stroke="#48484A" stroke-width="1.2" />
+                <rect x="166" y="131" width="21" height="19" rx="4" fill="#242426" stroke="#48484A" stroke-width="1.2" />
+
+                <!-- Right Face Buttons -->
+                <circle cx="405" cy="118" r="11" fill="#242426" stroke="#636366" stroke-width="1.3" />
+                <text x="405" y="122" text-anchor="middle" fill="#EBEBF5" font-size="11" font-weight="700">△</text>
+                <circle cx="381" cy="141" r="11" fill="#242426" stroke="#636366" stroke-width="1.3" />
+                <text x="381" y="145" text-anchor="middle" fill="#EBEBF5" font-size="11" font-weight="700">□</text>
+                <circle cx="405" cy="164" r="11" fill="#242426" stroke="#636366" stroke-width="1.3" />
+                <text x="405" y="168" text-anchor="middle" fill="#EBEBF5" font-size="11" font-weight="700">✕</text>
+                <circle id="svgBtnCircle" cx="429" cy="141" r="12" fill="rgba(10, 132, 255, 0.28)" stroke="#0A84FF" stroke-width="2" filter="url(#neonGlow)" />
+                <text x="429" y="145" text-anchor="middle" fill="#64D2FF" font-size="12" font-weight="900">○</text>
+
+                <!-- Left Stick (L3 + Quick Curve) -->
+                <circle id="svgBtnL3" cx="218" cy="174" r="22" fill="#141416" stroke="#0A84FF" stroke-width="1.8" />
+                <circle cx="218" cy="174" r="13" fill="#2C2C2E" />
+                <text id="svgTxtL3" x="218" y="178" text-anchor="middle" fill="#FFFFFF" font-size="10.5" font-weight="800">L3</text>
+
+                <!-- Left Stick Quick Sensitivity Callout -->
+                <rect x="6" y="162" width="128" height="36" rx="7" fill="#2C2C2E" stroke="#0A84FF" stroke-width="1.3" />
+                <text x="70" y="177" text-anchor="middle" fill="#64D2FF" font-size="11" font-weight="800">左搖桿靈敏度曲線</text>
+                <text x="70" y="192" text-anchor="middle" fill="#FFFFFF" font-size="11.5" font-weight="800">設為「快速 Quick」</text>
+                <line x1="134" y1="180" x2="195" y2="175" stroke="#0A84FF" stroke-width="1.3" stroke-dasharray="3 3" />
+
+                <!-- Right Stick (R3) -->
+                <circle cx="342" cy="174" r="22" fill="#141416" stroke="#636366" stroke-width="1.6" />
+                <circle cx="342" cy="174" r="13" fill="#2C2C2E" />
+                <text x="342" y="178" text-anchor="middle" fill="#EBEBF5" font-size="10.5" font-weight="700">R3</text>
+
+                <!-- Edge Fn Buttons -->
+                <rect x="205" y="201" width="26" height="11" rx="3" fill="#2C2C2E" stroke="#636366" stroke-width="1" />
+                <text x="218" y="209.5" text-anchor="middle" fill="#EBEBF5" font-size="8.5" font-weight="700">Fn</text>
+                <rect x="329" y="201" width="26" height="11" rx="3" fill="#2C2C2E" stroke="#636366" stroke-width="1" />
+                <text x="342" y="209.5" text-anchor="middle" fill="#EBEBF5" font-size="8.5" font-weight="700">Fn</text>
+
+                <!-- Left Back Paddle Box -->
+                <path d="M214 218 L188 242" stroke="#30D158" stroke-width="2" />
+                <rect x="18" y="238" width="232" height="58" rx="10" fill="#16291D" stroke="#30D158" stroke-width="2" filter="url(#neonGlow)" />
+                <text x="134" y="258" text-anchor="middle" fill="#EBEBF5" font-size="11.5" font-weight="700">【左背鍵 LB】（左中指撥片）</text>
+                <text id="svgLeftPaddleLabel" x="134" y="283" text-anchor="middle" fill="#30D158" font-size="15.5" font-weight="900">↑ 方向鍵上（移動補血）</text>
+
+                <!-- Right Back Paddle Box -->
+                <path d="M346 218 L372 242" stroke="#0A84FF" stroke-width="2" />
+                <rect x="310" y="238" width="232" height="58" rx="10" fill="#132338" stroke="#0A84FF" stroke-width="2" filter="url(#neonGlow)" />
+                <text x="426" y="258" text-anchor="middle" fill="#EBEBF5" font-size="11.5" font-weight="700">【右背鍵 RB】（右中指撥片）</text>
+                <text id="svgRightPaddleLabel" x="426" y="283" text-anchor="middle" fill="#64D2FF" font-size="15.5" font-weight="900">○ 閃避（閃現／擊退）</text>
+              </svg>
+
+              <div id="presetDescBar" class="preset-desc-bar"></div>
+            </div>
+          </div>
+
+          <div class="ios-card-section amber-border">
+            <div class="ios-card-header amber">🔓 TETRASTAR 侵入補給箱「免倒數」零壓力設定</div>
+            <div class="ios-row-item">
+              <div class="ios-row-title">設定 ➔ 協助工具 ➔ 開啟「停用謎題時間限制」</div>
+              <div class="ios-row-desc">手把按下 <strong>Options</strong> ➔ 進入<strong>「設定」</strong> ➔ 選取<strong>「協助工具（Accessibility）」</strong> ➔ 開啟<strong>「停用謎題時間限制」</strong>！開啟後所有方向鍵輸入補給箱與駭入小遊戲<strong>倒數計時永久凍結</strong>，暗房慢按零失誤。</div>
+            </div>
+            <div class="ios-row-item">
+              <div class="ios-row-title">💡 護肝加碼：動作輔助 ＆ 簡化 QTE</div>
+              <div class="ios-row-desc">同一協助工具頁面可一併開啟<strong>「動作輔助」</strong>與<strong>「簡化 QTE」</strong>，頭目關鍵閃光連段會自動進入慢動作提示，大幅減輕客廳遊玩手指負擔。</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- View 4: Backup, Restore & Reset -->
+        <section id="viewBackup" class="subview-panel" aria-label="進度備份與還原">
+          <div class="ios-card-section">
+            <div class="ios-card-header">📊 目前本機儲存狀態（100% 相容 sb_hud_v1 紀錄）</div>
+            <div class="backup-stat-grid">
+              <div class="backup-stat-item">
+                <span class="backup-stat-label">目前營地錨點</span>
+                <span id="backupStatAnchor" class="backup-stat-val">艾多城7號 — 施工區</span>
               </div>
-              <div class="skill-tier">
-                <strong>初期必點（艾多城7號）：</strong>生存線必點「完美閃避」、「<strong>閃現（↑+○）</strong>」、「<strong>擊退（↓+○）</strong>」與「招架／閃避回貝塔能量」；攻擊線點「伏擊」清背對小怪。
+              <div class="backup-stat-item">
+                <span class="backup-stat-label">已完成戰術檢核</span>
+                <span id="backupStatProgress" class="backup-stat-val">2 / 41 項</span>
               </div>
-              <div class="skill-tier">
-                <strong>中期主力（廢土～11號矩陣）：</strong>點滿「雙重跳躍」；貝塔技能主升 <strong>L1+○（衝擊波，遠距強制斷頭目紅紫光神技）</strong> 與 <strong>L1+□（破盾斬擊）</strong>。
+              <div class="backup-stat-item">
+                <span class="backup-stat-label">百合進度條 100% 狀態</span>
+                <span id="backupStatLily" class="backup-stat-val">未滿</span>
               </div>
-              <div class="skill-tier">
-                <strong>後期決戰（大沙漠～終局）：</strong>爆發技能主升 <strong>R1+○（懲戒：長無敵幀＋強制倒地）</strong>，強化 <strong>L3+R3 迅馳模式</strong> 破盾傷害，營地常備 2 顆 <strong>WB 泵浦（原地復活）</strong> 穩過雙王與最終戰！
+              <div class="backup-stat-item">
+                <span class="backup-stat-label">Edge 背鍵流派</span>
+                <span id="backupStatPreset" class="backup-stat-val">① 移動喝水流</span>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+
+          <div class="ios-card-section">
+            <div class="ios-card-header">💾 備份、還原與系統操作</div>
+            <button type="button" id="exportBtn" class="ios-action-btn">
+              <span>⬇ 匯出進度備份檔（JSON）</span>
+              <span class="ios-action-sub">下載至 iPad「檔案」保存</span>
+            </button>
+            <button type="button" id="importBtn" class="ios-action-btn">
+              <span>⬆ 匯入 JSON 備份還原</span>
+              <span class="ios-action-sub">讀取備份檔無縫恢復</span>
+            </button>
+            <input type="file" id="importFileInput" accept="application/json,.json" style="display:none" />
+            <button type="button" id="fullscreenBtn" class="ios-action-btn">
+              <span>⛶ 切換全螢幕模式</span>
+              <span class="ios-action-sub">Safari 建議「分享 ➔ 加入主畫面」</span>
+            </button>
+            <button type="button" id="resetBtn" class="ios-action-btn danger">
+              <span>↺ 重設戰術板進度…</span>
+              <span class="ios-action-sub">還原為初始施工區預設狀態</span>
+            </button>
+          </div>
+        </section>
+      </div>
     </main>
+  </div>
+
+  <!-- iOS Style Reset Confirmation Modal -->
+  <div id="resetModal" class="ios-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="resetModalTitle">
+    <div class="ios-modal-box">
+      <div class="ios-modal-body">
+        <div id="resetModalTitle" class="ios-modal-title">確定要重設進度嗎？</div>
+        <div class="ios-modal-desc">這會將打勾紀錄與營地錨點還原至初始「艾多城7號 — 施工區」預設狀態。建議先匯出 JSON 備份。</div>
+      </div>
+      <div class="ios-modal-actions">
+        <button type="button" id="resetCancelBtn" class="modal-btn">取消</button>
+        <button type="button" id="resetConfirmBtn" class="modal-btn danger">確定重設</button>
+      </div>
+    </div>
   </div>
 
   <div id="hudToast" class="hud-toast" role="status" aria-live="polite"></div>
@@ -1113,7 +1697,7 @@
       'use strict';
 
       // =====================================================================
-      // Storage Keys (Strictly prefixed with sb_hud_v1_)
+      // Storage Keys (Strictly preserved sb_hud_v1_ series for 100% inheritance)
       // =====================================================================
       var STORAGE_KEYS = {
         chapter: 'sb_hud_v1_chapter',
@@ -1161,7 +1745,7 @@
       };
 
       // =====================================================================
-      // Full 10-Chapter + 2 Red-Light Tactical Dataset (Taiwan Official Terms)
+      // Full 10-Chapter + 2 Red-Light Tactical Dataset (100% Preserved)
       // =====================================================================
       var CHAPTERS = [
         {
@@ -1169,6 +1753,7 @@
           num: '1',
           shortTitle: '艾多城7號',
           fullTitle: '1. 艾多城7號（Eidos 7）— 星降區至隕石坑',
+          subtitle: '開局核心關卡：目前已推進至<strong>「施工區」</strong>，前段亞巴頓與腐敗者已收合於頂端切換鈕。',
           isRedLight: false,
           banner: '開局教學與核心基本功關卡。目前已推進至<strong>「施工區」補給營地</strong>，前兩場頭目（亞巴頓、腐敗者）已預設勾選完成！',
           camps: [
@@ -1248,6 +1833,7 @@
           num: '2',
           shortTitle: '曦安',
           fullTitle: '2. 曦安（Xion）— 最後人類都市與百合工坊整備',
+          subtitle: '主城樞紐：<strong>略過純找貓跑腿</strong>，僅鎖定外脊裝強化與推進「百合進度條」關鍵支線！',
           isRedLight: false,
           banner: '主城樞紐。<strong>略過純找貓／找人瑣碎跑腿</strong>，僅鎖定解鎖系統功能、外脊裝欄位與<strong>大幅推進「百合進度條」</strong>之關鍵支線！',
           camps: [
@@ -1288,6 +1874,7 @@
           num: '3',
           shortTitle: '廢土',
           fullTitle: '3. 廢土（Wasteland）— 日光塔重啟與荒原頭目群',
+          subtitle: '開放荒原第一鐵則：<strong>進圖直奔【廢土日光塔】重啟電力</strong>，否則全區營地皆無法使用！',
           isRedLight: false,
           banner: '第一張半開放地圖！<strong>進圖第一鐵則：直奔【日光塔】重啟電力</strong>，否則整張地圖所有營地皆無法使用！',
           camps: [
@@ -1351,6 +1938,7 @@
           num: '4',
           shortTitle: '盧瓦高層',
           fullTitle: '4. 盧瓦高層（Altess Levoire）— 純無人機遠程射擊地城',
+          subtitle: '⚠️ <strong>全程封印刀劍、強制純無人機射擊！</strong>進門前買滿彈藥，背鍵推「① 移動喝水流」。',
           isRedLight: false,
           banner: '⚠️ <strong>特殊規則警示：本關全程封印刀劍，強制純用無人機射擊！</strong>進門前先在入口營地把彈藥買滿，背鍵切至<strong>「① 移動喝水流」</strong>最穩！',
           camps: [
@@ -1391,6 +1979,7 @@
           num: '5',
           shortTitle: '11號矩陣',
           fullTitle: '5. 11號矩陣（Matrix 11）— 地下鐵道與迅馳模式覺醒',
+          subtitle: '線性箱庭神關：沿途順路核心極多，過關正式覺醒逆轉神技<strong>【迅馳模式 L3+R3】</strong>！',
           isRedLight: false,
           banner: '線性大型箱庭神關！不僅順路核心極多，過關更直接解鎖逆轉神技<strong>【迅馳模式（L3+R3 無敵爆發）】</strong>！',
           camps: [
@@ -1447,6 +2036,7 @@
           num: '6',
           shortTitle: '大沙漠',
           fullTitle: '6. 大沙漠（Great Desert）— 綠洲樞紐、日光塔與反射外脊裝',
+          subtitle: '開放沙漠鐵則：先開綠洲營地，<strong>立刻往西擊敗守塔潛行獸重啟【大沙漠日光塔】</strong>開電！',
           isRedLight: false,
           banner: '第二張開放地圖！<strong>抵達流沙綠洲後，第一件事往西直奔【大沙漠日光塔】擊敗守塔潛行獸開電</strong>，切勿在沒電時盲目亂逛！',
           camps: [
@@ -1503,6 +2093,7 @@
           num: '7',
           shortTitle: '盧瓦底層',
           fullTitle: '7. 盧瓦底層（Abyss Levoire）— 深淵射擊地城與紅燈前夕',
+          subtitle: '⚠️ <strong>全程純無人機射擊關！</strong>通關出門即面臨「🔴 紅燈1」死線，務必撿齊實驗日誌補滿百合進度。',
           isRedLight: false,
           banner: '⚠️ <strong>本關同樣全程禁用刀劍、僅限無人機射擊！</strong>而且通關踏出大門後<strong>立刻面臨「🔴 紅燈1」不可逆死線</strong>，關內實驗紀錄務必順手撿增加百合進度！',
           camps: [
@@ -1536,6 +2127,7 @@
           num: '🔴1',
           shortTitle: '紅燈1：軌道電梯前',
           fullTitle: '🔴 紅燈 1 重大死線：找亞當前往軌道電梯（4號高塔）之前！',
+          subtitle: '🚨 <strong>不可逆死線：</strong>找亞當出發前往4號高塔前請停手檢核以下 3 點！出發後曦安未解支線永久失敗！',
           isRedLight: true,
           banner: '🚨 <strong>全遊戲最重要不可逆分水嶺！</strong>盧瓦底層通關回到曦安停機坪後，<strong>與亞當對話選擇「出發前往4號高塔」前請立即停手檢核以下 3 點</strong>！一旦出發，曦安所有未解支線永久失敗！',
           camps: [
@@ -1544,7 +2136,7 @@
               name: '🔴 紅燈 1 起飛前強制安全檢核單',
               tag: '不可逆死線',
               tagType: 'warn',
-              note: '完成以下三項檢核並打開頂端「🌸 百合進度條 100% 檢核」開關後，再安心找亞當出發！',
+              note: '完成以下三項檢核並打開左側欄頂端「🌸 百合 100%」撥桿開關後，再安心找亞當出發！',
               items: [
                 {
                   id: 'red1_check_xion_quests',
@@ -1576,6 +2168,7 @@
           num: '8',
           shortTitle: '艾多城9號（隱藏雙王）',
           fullTitle: '8. 艾多城9號（Eidos 9）— 隱藏關卡與摩天輪雙頭目決戰',
+          subtitle: '🌸 <strong>百合 100% 隱藏關卡：</strong>清除沉沒都市腐敗繭、速殺同場雙王，取得真結局晶片【伊伯利斯之刃】！',
           isRedLight: false,
           banner: '🌸 <strong>百合進度 100% 專屬隱藏關卡！</strong>目標是清除沉沒都市腐敗繭群、擊破<strong>同場雙頭目</strong>，並進入百合秘密花園取得真結局關鍵晶片！',
           camps: [
@@ -1616,6 +2209,7 @@
           num: '9',
           shortTitle: '4號高塔',
           fullTitle: '9. 4號高塔（Spire 4）— 軌道電梯突破與三大頭目連戰',
+          subtitle: '單向軌道電梯長征：內含<strong>三場大型頭目戰</strong>，每個補給營地務必買滿 WB 泵浦與血水！',
           isRedLight: false,
           banner: '高張力科幻大片關卡！本關為單向長征（通關後才會回地面），內含<strong>三場大型頭目戰</strong>，每個補給營地務必把 WB 泵浦與血水買滿！',
           camps: [
@@ -1665,6 +2259,7 @@
           num: '🔴2',
           shortTitle: '紅燈2：最終戰前',
           fullTitle: '🔴 紅燈 2 最終死線：前往「巢穴（最終決戰）」之前！',
+          subtitle: '🚨 <strong>踏入巢穴前的最後自由探索機會！</strong>務必清完廢土與大沙漠所有頭目並升滿裝備！',
           isRedLight: true,
           banner: '🚨 <strong>踏入巢穴前的最後自由探索機會！</strong>從4號高塔返回並擊退燃燒曦安入口強敵後，<strong>前往廢土南部「巢穴」前務必清完廢土與大沙漠所有頭目</strong>！',
           camps: [
@@ -1698,6 +2293,7 @@
           num: '10',
           shortTitle: '巢穴最終戰',
           fullTitle: '10. 燃燒曦安 ＆ 巢穴（Nest）— 渡鴉死鬥與雙結局最終戰',
+          subtitle: '⚔️ <strong>終局巔峰對決：</strong>善用衝擊手榴彈、R1+○ 無敵幀與 L3+R3 迅馳模式迎接完美真結局！',
           isRedLight: false,
           banner: '⚔️ <strong>全作最高潮巔峰對決！</strong>建議切換背鍵為<strong>「① 移動喝水流」或「② 雙中指打鐵流」</strong>，善用衝擊手榴彈、R1+○ 無敵幀與 L3+R3 迅馳模式！',
           camps: [
@@ -1745,7 +2341,7 @@
       ];
 
       // =====================================================================
-      // Application State Initialization & Storage Helpers
+      // Application State & Anti-Drift Storage Layer
       // =====================================================================
       var state = {
         chapter: 'ch1',
@@ -1753,7 +2349,11 @@
         checked: {},
         lily100: false,
         preset: 'heal',
-        expanded: {}
+        expanded: {},
+        // UI-only runtime states (do not pollute sb_hud_v1_ storage keys)
+        activeView: 'guide',         // 'guide' | 'combat' | 'controller' | 'backup'
+        showCompletedCamps: false,   // Default auto-hide completed / pre-anchor camps
+        sessionTouchedCamp: ''       // Prevents jarring disappearance mid-clicking
       };
 
       function safeParseJSON(raw, fallback) {
@@ -1764,6 +2364,25 @@
         } catch (e) {
           return fallback;
         }
+      }
+
+      function getChapterById(chapId) {
+        for (var i = 0; i < CHAPTERS.length; i++) {
+          if (CHAPTERS[i].id === chapId) return CHAPTERS[i];
+        }
+        return null;
+      }
+
+      function findCampInfo(campId) {
+        for (var i = 0; i < CHAPTERS.length; i++) {
+          var ch = CHAPTERS[i];
+          for (var j = 0; j < ch.camps.length; j++) {
+            if (ch.camps[j].id === campId) {
+              return { chapter: ch, camp: ch.camps[j], campIndex: j };
+            }
+          }
+        }
+        return null;
       }
 
       function loadState() {
@@ -1822,27 +2441,8 @@
         try {
           localStorage.setItem(STORAGE_KEYS[name], typeof val === 'string' ? val : JSON.stringify(val));
         } catch (e) {
-          showToast('⚠ 儲存空間受限，請匯出 JSON 備份');
+          showToast('⚠ 儲存空間受限，請至設定匯出 JSON 備份');
         }
-      }
-
-      function getChapterById(chapId) {
-        for (var i = 0; i < CHAPTERS.length; i++) {
-          if (CHAPTERS[i].id === chapId) return CHAPTERS[i];
-        }
-        return null;
-      }
-
-      function findCampInfo(campId) {
-        for (var i = 0; i < CHAPTERS.length; i++) {
-          var ch = CHAPTERS[i];
-          for (var j = 0; j < ch.camps.length; j++) {
-            if (ch.camps[j].id === campId) {
-              return { chapter: ch, camp: ch.camps[j] };
-            }
-          }
-        }
-        return null;
       }
 
       function countCheckTotals() {
@@ -1861,6 +2461,47 @@
         return { done: done, total: total };
       }
 
+      function isCampAllChecked(camp) {
+        if (!camp.items || camp.items.length === 0) return false;
+        for (var i = 0; i < camp.items.length; i++) {
+          if (!state.checked[camp.items[i].id]) return false;
+        }
+        return true;
+      }
+
+      function isChapterAllChecked(ch) {
+        for (var i = 0; i < ch.camps.length; i++) {
+          if (!isCampAllChecked(ch.camps[i])) return false;
+        }
+        return true;
+      }
+
+      // Determines whether a camp is considered "completed / passed" and hidden by default
+      function isCampCompletedOrPassed(camp, campIndex, anchorInfo, currentChapId) {
+        if (camp.id === state.camp) return false;
+        if (anchorInfo && anchorInfo.chapter.id === currentChapId && campIndex < anchorInfo.campIndex) {
+          return true;
+        }
+        return isCampAllChecked(camp);
+      }
+
+      // =====================================================================
+      // Drawer Helpers (Portrait < 900px)
+      // =====================================================================
+      function openDrawer() {
+        var sb = document.getElementById('iosSidebar');
+        var bd = document.getElementById('drawerBackdrop');
+        if (sb) sb.classList.add('drawer-open');
+        if (bd) bd.classList.add('open');
+      }
+
+      function closeDrawer() {
+        var sb = document.getElementById('iosSidebar');
+        var bd = document.getElementById('drawerBackdrop');
+        if (sb) sb.classList.remove('drawer-open');
+        if (bd) bd.classList.remove('open');
+      }
+
       // =====================================================================
       // UI Rendering Functions
       // =====================================================================
@@ -1876,143 +2517,233 @@
         }, 2300);
       }
 
-      function renderTopStatus() {
-        // Anchor label
-        var anchorInfo = findCampInfo(state.camp);
-        var anchorLabel = document.getElementById('anchorLabelText');
-        if (anchorInfo && anchorLabel) {
-          anchorLabel.textContent = anchorInfo.camp.name.split('（')[0];
-        }
-
-        // Progress counter
+      function renderSidebarAndStatus() {
         var stats = countCheckTotals();
-        var statEl = document.getElementById('overallProgress');
-        if (statEl) {
-          statEl.textContent = '戰術進度 ' + stats.done + ' / ' + stats.total;
+        var progEl = document.getElementById('overallProgress');
+        if (progEl) {
+          progEl.textContent = stats.done + '/' + stats.total;
         }
 
-        // Lily 100% Toggle
+        // Lily 100% iOS Switch
         var lilyBtn = document.getElementById('lilyToggleBtn');
-        var lilyTxt = document.getElementById('lilyStatusIcon');
+        var lilyTxt = document.getElementById('lilyStatusText');
         if (lilyBtn && lilyTxt) {
           lilyBtn.setAttribute('aria-checked', state.lily100 ? 'true' : 'false');
           if (state.lily100) {
             lilyBtn.classList.add('is-ready');
-            lilyBtn.classList.remove('is-warn');
-            lilyTxt.textContent = '🌸 百合進度條 100%：已滿（隱藏關解鎖）';
+            lilyTxt.textContent = '已滿 100%（隱藏關解鎖就緒）';
           } else {
             lilyBtn.classList.remove('is-ready');
-            lilyBtn.classList.add('is-warn');
-            lilyTxt.textContent = '🌸 百合進度條 100% 檢核：未滿';
+            lilyTxt.textContent = '未滿（紅燈1前必檢核）';
           }
         }
-      }
 
-      function renderChapterAxis() {
-        var axis = document.getElementById('chapterAxis');
-        if (!axis) return;
-        axis.innerHTML = '';
-
+        // Anchor Labels (Desktop & Portrait)
         var anchorInfo = findCampInfo(state.camp);
+        var cleanAnchorName = anchorInfo ? anchorInfo.camp.name.split('（')[0] : '艾多城7號 — 施工區';
+        var anchorDesk = document.getElementById('anchorLabelDesktop');
+        var anchorPort = document.getElementById('anchorLabelPortrait');
+        if (anchorDesk) anchorDesk.textContent = cleanAnchorName;
+        if (anchorPort) anchorPort.textContent = cleanAnchorName;
+
+        // Render Chapter List in Sidebar
+        var navList = document.getElementById('chapterNavList');
         var anchoredChapId = anchorInfo ? anchorInfo.chapter.id : '';
-
-        for (var i = 0; i < CHAPTERS.length; i++) {
-          var ch = CHAPTERS[i];
-
-          if (i > 0) {
-            var sep = document.createElement('span');
-            // Pair Ch.8 Eidos 9 & Ch.9 Spire 4 with ／ as specified in HUD axis
-            if (ch.id === 'ch9') {
-              sep.className = 'axis-pair-slash';
-              sep.textContent = '／';
-            } else {
-              sep.className = 'axis-arrow';
-              sep.textContent = '➔';
+        if (navList) {
+          navList.innerHTML = '';
+          for (var i = 0; i < CHAPTERS.length; i++) {
+            var ch = CHAPTERS[i];
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'nav-row';
+            if (ch.isRedLight) btn.classList.add('is-red-node');
+            if (state.activeView === 'guide' && state.chapter === ch.id) {
+              btn.classList.add('active');
             }
-            axis.appendChild(sep);
+
+            var leftSpan = document.createElement('span');
+            leftSpan.className = 'nav-row-left';
+
+            var badge = document.createElement('span');
+            badge.className = 'chap-badge';
+            badge.textContent = ch.num;
+            leftSpan.appendChild(badge);
+
+            var title = document.createElement('span');
+            title.className = 'nav-row-title';
+            title.textContent = ch.shortTitle;
+            leftSpan.appendChild(title);
+
+            var rightSpan = document.createElement('span');
+            rightSpan.className = 'nav-row-right';
+
+            if (isChapterAllChecked(ch)) {
+              var doneMark = document.createElement('span');
+              doneMark.className = 'chap-done-dot';
+              doneMark.textContent = '✓';
+              rightSpan.appendChild(doneMark);
+            }
+
+            if (ch.id === anchoredChapId) {
+              var pin = document.createElement('span');
+              pin.className = 'pin-indicator';
+              pin.title = '目前營地錨點所在章節';
+              pin.textContent = '📍';
+              rightSpan.appendChild(pin);
+            }
+
+            btn.appendChild(leftSpan);
+            btn.appendChild(rightSpan);
+
+            (function (targetId) {
+              btn.addEventListener('click', function () {
+                state.activeView = 'guide';
+                if (state.chapter !== targetId) {
+                  state.chapter = targetId;
+                  state.showCompletedCamps = false;
+                  state.sessionTouchedCamp = '';
+                  saveKey('chapter', targetId);
+                }
+                closeDrawer();
+                renderAll(false);
+              });
+            })(ch.id);
+
+            navList.appendChild(btn);
           }
+        }
 
-          var btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'axis-node';
-          if (ch.isRedLight) btn.classList.add('red-light');
-          if (ch.id === state.chapter) btn.classList.add('active');
-          if (ch.id === anchoredChapId) btn.classList.add('has-anchor');
-
-          if (ch.isRedLight) {
-            var dot = document.createElement('span');
-            dot.className = 'pulse-red';
-            btn.appendChild(dot);
-            var rlText = document.createElement('span');
-            rlText.textContent = ch.shortTitle;
-            btn.appendChild(rlText);
+        // Settings Nav Highlight
+        var settingBtns = document.querySelectorAll('.settings-nav-btn');
+        for (var s = 0; s < settingBtns.length; s++) {
+          var vKey = settingBtns[s].getAttribute('data-view');
+          if (state.activeView === vKey) {
+            settingBtns[s].classList.add('active');
           } else {
-            var numSpan = document.createElement('span');
-            numSpan.className = 'chap-num';
-            numSpan.textContent = ch.num;
-            btn.appendChild(numSpan);
-
-            var titleSpan = document.createElement('span');
-            titleSpan.textContent = ch.shortTitle;
-            btn.appendChild(titleSpan);
+            settingBtns[s].classList.remove('active');
           }
+        }
 
-          (function (targetId) {
-            btn.addEventListener('click', function () {
-              state.chapter = targetId;
-              saveKey('chapter', targetId);
-              renderChapterAxis();
-              renderLeftColumn(false);
-            });
-          })(ch.id);
+        // Portrait Quick Tabs Highlight
+        var quickBtns = document.querySelectorAll('.quick-tab-btn');
+        for (var q = 0; q < quickBtns.length; q++) {
+          var qKey = quickBtns[q].getAttribute('data-quick-view');
+          if (state.activeView === qKey) {
+            quickBtns[q].classList.add('active');
+          } else {
+            quickBtns[q].classList.remove('active');
+          }
+        }
 
-          axis.appendChild(btn);
+        // Update Backup Tab Summary Stats
+        var bAnchor = document.getElementById('backupStatAnchor');
+        var bProg = document.getElementById('backupStatProgress');
+        var bLily = document.getElementById('backupStatLily');
+        var bPreset = document.getElementById('backupStatPreset');
+        if (bAnchor) bAnchor.textContent = cleanAnchorName;
+        if (bProg) bProg.textContent = stats.done + ' / ' + stats.total + ' 項';
+        if (bLily) {
+          bLily.textContent = state.lily100 ? '✓ 已滿 100%（隱藏關解鎖）' : '未滿 100%';
+          bLily.style.color = state.lily100 ? '#30D158' : '#FFD60A';
+        }
+        if (bPreset && PRESETS[state.preset]) {
+          bPreset.textContent = PRESETS[state.preset].title.split('（')[0];
         }
       }
 
-      function renderLeftColumn(scrollToAnchor) {
-        var ch = getChapterById(state.chapter) || CHAPTERS[0];
-        var titleEl = document.getElementById('leftPanelTitle');
-        if (titleEl) titleEl.textContent = ch.fullTitle;
+      function renderTopBarAndSubViews() {
+        var topTitle = document.getElementById('mainTopTitle');
+        var viewGuide = document.getElementById('viewGuide');
+        var viewCombat = document.getElementById('viewCombat');
+        var viewController = document.getElementById('viewController');
+        var viewBackup = document.getElementById('viewBackup');
+        var completedDesk = document.getElementById('completedToggleDesktop');
 
-        var container = document.getElementById('leftScroll');
+        if (viewGuide) viewGuide.classList.toggle('active', state.activeView === 'guide');
+        if (viewCombat) viewCombat.classList.toggle('active', state.activeView === 'combat');
+        if (viewController) viewController.classList.toggle('active', state.activeView === 'controller');
+        if (viewBackup) viewBackup.classList.toggle('active', state.activeView === 'backup');
+
+        if (state.activeView === 'guide') {
+          var ch = getChapterById(state.chapter) || CHAPTERS[0];
+          if (topTitle) topTitle.textContent = ch.fullTitle.split('—')[0].trim();
+        } else if (state.activeView === 'combat') {
+          if (topTitle) topTitle.textContent = '⚡ 色光公式與必點技能';
+          if (completedDesk) completedDesk.style.display = 'none';
+        } else if (state.activeView === 'controller') {
+          if (topTitle) topTitle.textContent = '🎮 Edge 手把與寶箱設定';
+          if (completedDesk) completedDesk.style.display = 'none';
+        } else if (state.activeView === 'backup') {
+          if (topTitle) topTitle.textContent = '💾 進度備份與還原';
+          if (completedDesk) completedDesk.style.display = 'none';
+        }
+      }
+
+      function renderGuideContent(scrollToAnchor) {
+        var ch = getChapterById(state.chapter) || CHAPTERS[0];
+        var anchorInfo = findCampInfo(state.camp);
+
+        // Concise 1-line Subtitle
+        var subbar = document.getElementById('chapterSubbar');
+        var subText = document.getElementById('chapterSubtitleText');
+        if (subbar && subText) {
+          subbar.className = 'chapter-subbar' + (ch.isRedLight ? ' is-red' : '');
+          var lilyExtra = '';
+          if (ch.id === 'red1' || ch.id === 'ch8') {
+            lilyExtra = state.lily100
+              ? ' ｜ <span style="color:#30D158;font-weight:700;">✓ 百合100%已就緒</span>'
+              : ' ｜ <span style="color:#FFD60A;font-weight:700;">⚠ 尚未勾選百合100%</span>';
+          }
+          subText.innerHTML = (ch.subtitle || ch.banner) + lilyExtra;
+        }
+
+        // Count completed/passed camps in this chapter
+        var completedCount = 0;
+        for (var c = 0; c < ch.camps.length; c++) {
+          if (isCampCompletedOrPassed(ch.camps[c], c, anchorInfo, ch.id)) {
+            completedCount++;
+          }
+        }
+
+        // Update Topbar & Portrait Completed Toggle Buttons
+        var compDesk = document.getElementById('completedToggleDesktop');
+        var compPort = document.getElementById('completedTogglePortrait');
+        var toggleButtons = [compDesk, compPort];
+        for (var b = 0; b < toggleButtons.length; b++) {
+          var btnEl = toggleButtons[b];
+          if (!btnEl) continue;
+          if (state.activeView === 'guide' && completedCount > 0) {
+            btnEl.style.display = 'inline-flex';
+            btnEl.classList.toggle('is-showing', state.showCompletedCamps);
+            btnEl.textContent = (state.showCompletedCamps ? '隱藏已完成營地（' : '顯示已完成營地（') + completedCount + '）';
+          } else {
+            btnEl.style.display = 'none';
+          }
+        }
+
+        var container = document.getElementById('campListContainer');
         if (!container) return;
         container.innerHTML = '';
 
-        // Chapter Top Banner
-        var banner = document.createElement('div');
-        banner.className = 'chapter-banner' + (ch.isRedLight ? ' is-red' : '');
+        var renderedCount = 0;
 
-        var bTitle = document.createElement('div');
-        bTitle.className = 'chapter-banner-title';
-        bTitle.innerHTML = '<span>' + (ch.isRedLight ? '🚨 紅燈死線攔截檢核' : '📡 章節戰術摘要') + '</span>';
-
-        if (ch.id === 'red1' || ch.id === 'ch8') {
-          var lilyBadge = document.createElement('span');
-          lilyBadge.style.fontSize = '12px';
-          lilyBadge.style.color = state.lily100 ? '#34d399' : '#fbbf24';
-          lilyBadge.textContent = state.lily100 ? '✓ 百合100%已就緒' : '⚠ 尚未勾選百合100%';
-          bTitle.appendChild(lilyBadge);
-        }
-
-        var bDesc = document.createElement('div');
-        bDesc.className = 'chapter-banner-desc';
-        bDesc.innerHTML = ch.banner;
-
-        banner.appendChild(bTitle);
-        banner.appendChild(bDesc);
-        container.appendChild(banner);
-
-        // Render Camps
         for (var i = 0; i < ch.camps.length; i++) {
           var camp = ch.camps[i];
+          var isCompleted = isCampCompletedOrPassed(camp, i, anchorInfo, ch.id);
+
+          // Auto-hide completed/pre-anchor camps unless toggled on or actively being clicked in this view
+          if (isCompleted && !state.showCompletedCamps && state.sessionTouchedCamp !== camp.id) {
+            continue;
+          }
+
+          renderedCount++;
           var isAnchored = (state.camp === camp.id);
-          // Default expand if anchored, red light, single-camp chapter, or explicitly expanded
           var isExpanded = Boolean(
             state.expanded[camp.id] ||
             isAnchored ||
             ch.isRedLight ||
-            ch.camps.length === 1
+            ch.camps.length === 1 ||
+            (isCompleted && state.showCompletedCamps)
           );
 
           var card = document.createElement('div');
@@ -2047,18 +2778,17 @@
           var anchorBtn = document.createElement('button');
           anchorBtn.type = 'button';
           anchorBtn.className = 'anchor-btn' + (isAnchored ? ' active' : '');
-          anchorBtn.textContent = isAnchored ? '📍 目前營地錨點' : '設為營地錨點';
+          anchorBtn.textContent = isAnchored ? '📍 目前營地錨點' : '設為錨點';
 
           (function (campObj, cardEl) {
             anchorBtn.addEventListener('click', function (ev) {
               ev.stopPropagation();
               state.camp = campObj.id;
               state.expanded[campObj.id] = true;
+              state.sessionTouchedCamp = '';
               saveKey('camp', state.camp);
               saveKey('expanded', state.expanded);
-              renderTopStatus();
-              renderChapterAxis();
-              renderLeftColumn(false);
+              renderAll(false);
               showToast('📍 已將營地錨點設為：' + campObj.name.split('（')[0]);
             });
 
@@ -2078,7 +2808,6 @@
           header.appendChild(anchorBtn);
           card.appendChild(header);
 
-          // Body
           var body = document.createElement('div');
           body.className = 'camp-body';
 
@@ -2131,8 +2860,9 @@
             row.appendChild(box);
             row.appendChild(content);
 
-            (function (itemObj, rowEl) {
+            (function (itemObj, campObj, rowEl) {
               rowEl.addEventListener('click', function () {
+                state.sessionTouchedCamp = campObj.id;
                 var nextVal = !state.checked[itemObj.id];
                 if (nextVal) {
                   state.checked[itemObj.id] = true;
@@ -2145,14 +2875,15 @@
                 }
                 saveKey('checked', state.checked);
 
-                // Sync Lily 100% switch if user checks red1_check_lily_100
                 if (itemObj.id === 'red1_check_lily_100' && nextVal && !state.lily100) {
                   state.lily100 = true;
                   saveKey('lily100', 'true');
                 }
-                renderTopStatus();
+
+                renderSidebarAndStatus();
+                renderGuideContent(false);
               });
-            })(item, row);
+            })(item, camp, row);
 
             listDiv.appendChild(row);
           }
@@ -2162,39 +2893,56 @@
           container.appendChild(card);
         }
 
+        // If all camps in this chapter are completed and auto-hidden, provide one-tap card to expand
+        if (renderedCount === 0 && completedCount > 0) {
+          var doneCard = document.createElement('div');
+          doneCard.className = 'all-done-card';
+
+          var doneTxt = document.createElement('div');
+          doneTxt.className = 'all-done-text';
+          doneTxt.textContent = '✓ 本章節全部營地檢核項目已完成（共 ' + completedCount + ' 個營地）';
+
+          var showBtn = document.createElement('button');
+          showBtn.type = 'button';
+          showBtn.className = 'completed-toggle-btn is-showing';
+          showBtn.textContent = '展開檢視已完成營地（' + completedCount + '）';
+          showBtn.addEventListener('click', function () {
+            state.showCompletedCamps = true;
+            renderGuideContent(false);
+          });
+
+          doneCard.appendChild(doneTxt);
+          doneCard.appendChild(showBtn);
+          container.appendChild(doneCard);
+        }
+
+        var mainScroll = document.getElementById('mainScroll');
         if (scrollToAnchor) {
           setTimeout(function () {
             var targetDom = document.getElementById('camp-dom-' + state.camp);
             if (targetDom) {
               targetDom.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-          }, 60);
-        } else {
-          container.scrollTop = 0;
+          }, 50);
+        } else if (mainScroll && !state.sessionTouchedCamp) {
+          mainScroll.scrollTop = 0;
         }
       }
 
       function renderPresetUI() {
         var presetData = PRESETS[state.preset] || PRESETS.heal;
 
-        // Toggle active preset button
         var btns = document.querySelectorAll('.preset-btn');
         for (var i = 0; i < btns.length; i++) {
           var pKey = btns[i].getAttribute('data-preset');
-          if (pKey === state.preset) {
-            btns[i].classList.add('active');
-          } else {
-            btns[i].classList.remove('active');
-          }
+          btns[i].classList.toggle('active', pKey === state.preset);
         }
 
-        // Update SVG Left & Right Back Paddle labels
         var leftPaddleTxt = document.getElementById('svgLeftPaddleLabel');
         var rightPaddleTxt = document.getElementById('svgRightPaddleLabel');
         if (leftPaddleTxt) leftPaddleTxt.textContent = presetData.leftLabel;
         if (rightPaddleTxt) rightPaddleTxt.textContent = presetData.rightLabel;
 
-        // Reset SVG dynamic highlights (Up, L1, L3)
         var btnUp = document.getElementById('svgBtnUp');
         var txtUp = document.getElementById('svgTxtUp');
         var btnL1 = document.getElementById('svgBtnL1');
@@ -2202,56 +2950,117 @@
         var btnL3 = document.getElementById('svgBtnL3');
         var txtL3 = document.getElementById('svgTxtL3');
 
-        if (btnUp) { btnUp.setAttribute('fill', '#1e293b'); btnUp.setAttribute('stroke', '#475569'); btnUp.setAttribute('stroke-width', '1.5'); }
-        if (txtUp) { txtUp.setAttribute('fill', '#cbd5e1'); }
-        if (btnL1) { btnL1.setAttribute('fill', '#1f293d'); btnL1.setAttribute('stroke', '#475569'); btnL1.setAttribute('stroke-width', '1.5'); }
-        if (txtL1) { txtL1.setAttribute('fill', '#cbd5e1'); }
-        if (btnL3) { btnL3.setAttribute('fill', '#0f1520'); btnL3.setAttribute('stroke', '#38bdf8'); btnL3.setAttribute('stroke-width', '1.8'); }
-        if (txtL3) { txtL3.setAttribute('fill', '#e2e8f0'); }
+        if (btnUp) { btnUp.setAttribute('fill', '#2C2C2E'); btnUp.setAttribute('stroke', '#636366'); btnUp.setAttribute('stroke-width', '1.5'); }
+        if (txtUp) { txtUp.setAttribute('fill', '#EBEBF5'); }
+        if (btnL1) { btnL1.setAttribute('fill', '#2C2C2E'); btnL1.setAttribute('stroke', '#636366'); btnL1.setAttribute('stroke-width', '1.5'); }
+        if (txtL1) { txtL1.setAttribute('fill', '#EBEBF5'); }
+        if (btnL3) { btnL3.setAttribute('fill', '#141416'); btnL3.setAttribute('stroke', '#0A84FF'); btnL3.setAttribute('stroke-width', '1.8'); }
+        if (txtL3) { txtL3.setAttribute('fill', '#FFFFFF'); }
 
         if (presetData.highlight === 'up' && btnUp && txtUp) {
-          btnUp.setAttribute('fill', 'rgba(45, 212, 191, 0.28)');
-          btnUp.setAttribute('stroke', '#2dd4bf');
+          btnUp.setAttribute('fill', 'rgba(48, 209, 88, 0.28)');
+          btnUp.setAttribute('stroke', '#30D158');
           btnUp.setAttribute('stroke-width', '2.2');
-          txtUp.setAttribute('fill', '#2dd4bf');
+          txtUp.setAttribute('fill', '#30D158');
         } else if (presetData.highlight === 'l1' && btnL1 && txtL1) {
-          btnL1.setAttribute('fill', 'rgba(45, 212, 191, 0.28)');
-          btnL1.setAttribute('stroke', '#2dd4bf');
+          btnL1.setAttribute('fill', 'rgba(48, 209, 88, 0.28)');
+          btnL1.setAttribute('stroke', '#30D158');
           btnL1.setAttribute('stroke-width', '2.2');
-          txtL1.setAttribute('fill', '#2dd4bf');
+          txtL1.setAttribute('fill', '#30D158');
         } else if (presetData.highlight === 'l3' && btnL3 && txtL3) {
-          btnL3.setAttribute('fill', 'rgba(45, 212, 191, 0.28)');
-          btnL3.setAttribute('stroke', '#2dd4bf');
+          btnL3.setAttribute('fill', 'rgba(48, 209, 88, 0.28)');
+          btnL3.setAttribute('stroke', '#30D158');
           btnL3.setAttribute('stroke-width', '2.6');
-          txtL3.setAttribute('fill', '#2dd4bf');
+          txtL3.setAttribute('fill', '#30D158');
         }
 
-        // Update tactical description
         var descBar = document.getElementById('presetDescBar');
         if (descBar) {
           descBar.innerHTML = presetData.desc;
         }
       }
 
-      // =====================================================================
-      // Event Bindings (Export / Import JSON, Lily Switch, Anchor Jump, Presets)
-      // =====================================================================
-      function bindEvents() {
-        // Anchor Jump Button
-        var jumpBtn = document.getElementById('anchorJumpBtn');
-        if (jumpBtn) {
-          jumpBtn.addEventListener('click', function () {
-            var info = findCampInfo(state.camp);
-            if (!info) return;
-            state.chapter = info.chapter.id;
-            state.expanded[state.camp] = true;
-            saveKey('chapter', state.chapter);
-            saveKey('expanded', state.expanded);
-            renderChapterAxis();
-            renderLeftColumn(true);
-            showToast('📍 已定位至錨點：' + info.camp.name.split('（')[0]);
-          });
+      function renderAll(scrollToAnchor) {
+        renderSidebarAndStatus();
+        renderTopBarAndSubViews();
+        if (state.activeView === 'guide') {
+          renderGuideContent(scrollToAnchor);
+        } else {
+          var mainScroll = document.getElementById('mainScroll');
+          if (mainScroll) mainScroll.scrollTop = 0;
         }
+        renderPresetUI();
+      }
+
+      // =====================================================================
+      // Event Bindings
+      // =====================================================================
+      function jumpToCurrentAnchor() {
+        var info = findCampInfo(state.camp);
+        if (!info) return;
+        state.activeView = 'guide';
+        state.chapter = info.chapter.id;
+        state.expanded[state.camp] = true;
+        state.sessionTouchedCamp = '';
+        saveKey('chapter', state.chapter);
+        saveKey('expanded', state.expanded);
+        closeDrawer();
+        renderAll(true);
+        showToast('📍 已定位至目前錨點：' + info.camp.name.split('（')[0]);
+      }
+
+      function toggleCompletedCamps() {
+        state.showCompletedCamps = !state.showCompletedCamps;
+        state.sessionTouchedCamp = '';
+        renderGuideContent(false);
+      }
+
+      function bindEvents() {
+        // Portrait Slide-over Drawer Open / Backdrop Close
+        var openBtn = document.getElementById('drawerOpenBtn');
+        var backdrop = document.getElementById('drawerBackdrop');
+        if (openBtn) openBtn.addEventListener('click', openDrawer);
+        if (backdrop) backdrop.addEventListener('click', closeDrawer);
+
+        // Sidebar Settings Navigation Buttons
+        var settingBtns = document.querySelectorAll('.settings-nav-btn');
+        for (var i = 0; i < settingBtns.length; i++) {
+          (function (btn) {
+            btn.addEventListener('click', function () {
+              var targetView = btn.getAttribute('data-view');
+              if (!targetView) return;
+              state.activeView = targetView;
+              closeDrawer();
+              renderAll(false);
+            });
+          })(settingBtns[i]);
+        }
+
+        // Portrait Quick View Switcher Pills
+        var quickBtns = document.querySelectorAll('.quick-tab-btn');
+        for (var q = 0; q < quickBtns.length; q++) {
+          (function (btn) {
+            btn.addEventListener('click', function () {
+              var targetView = btn.getAttribute('data-quick-view');
+              if (!targetView) return;
+              state.activeView = targetView;
+              closeDrawer();
+              renderAll(false);
+            });
+          })(quickBtns[q]);
+        }
+
+        // Anchor Jump Pills (Desktop & Portrait)
+        var jumpDesk = document.getElementById('anchorJumpBtnDesktop');
+        var jumpPort = document.getElementById('anchorJumpBtnPortrait');
+        if (jumpDesk) jumpDesk.addEventListener('click', jumpToCurrentAnchor);
+        if (jumpPort) jumpPort.addEventListener('click', jumpToCurrentAnchor);
+
+        // Completed Camps Toggle Pills (Desktop & Portrait)
+        var compDesk = document.getElementById('completedToggleDesktop');
+        var compPort = document.getElementById('completedTogglePortrait');
+        if (compDesk) compDesk.addEventListener('click', toggleCompletedCamps);
+        if (compPort) compPort.addEventListener('click', toggleCompletedCamps);
 
         // Lily 100% Switch
         var lilyBtn = document.getElementById('lilyToggleBtn');
@@ -2259,15 +3068,15 @@
           lilyBtn.addEventListener('click', function () {
             state.lily100 = !state.lily100;
             saveKey('lily100', state.lily100 ? 'true' : 'false');
-            renderTopStatus();
-            renderLeftColumn(false);
-            showToast(state.lily100 ? '🌸 百合進度 100% 已確認！艾多城9號隱藏關解鎖就緒' : '🌸 已切換為「百合進度未滿 100%」提醒狀態');
+            renderSidebarAndStatus();
+            if (state.activeView === 'guide') renderGuideContent(false);
+            showToast(state.lily100 ? '🌸 百合進度 100% 已開啟！艾多城9號隱藏關解鎖就緒' : '🌸 已切換為「百合進度未滿 100%」提醒狀態');
           });
         }
 
-        // Preset Switcher Buttons
+        // Edge Back-Paddle Preset Buttons
         var presetBtns = document.querySelectorAll('.preset-btn');
-        for (var i = 0; i < presetBtns.length; i++) {
+        for (var p = 0; p < presetBtns.length; p++) {
           (function (btn) {
             btn.addEventListener('click', function () {
               var key = btn.getAttribute('data-preset');
@@ -2275,9 +3084,10 @@
               state.preset = key;
               saveKey('preset', key);
               renderPresetUI();
+              renderSidebarAndStatus();
               showToast('🎮 已切換背鍵流派：' + PRESETS[key].title);
             });
-          })(presetBtns[i]);
+          })(presetBtns[p]);
         }
 
         // Export JSON Progress
@@ -2353,10 +3163,10 @@
                   saveKey('expanded', state.expanded);
                 }
 
-                renderTopStatus();
-                renderChapterAxis();
-                renderLeftColumn(true);
-                renderPresetUI();
+                state.activeView = 'guide';
+                state.showCompletedCamps = false;
+                state.sessionTouchedCamp = '';
+                renderAll(true);
                 showToast('✓ 進度匯入還原成功！');
               } catch (err) {
                 showToast('⚠ 匯入失敗：無法解析 JSON 檔案');
@@ -2377,26 +3187,61 @@
             var isFs = doc.fullscreenElement || doc.webkitFullscreenElement;
             if (!isFs && reqFs) {
               reqFs.call(docEl).catch(function () {
-                showToast('💡 平板建議使用瀏覽器「加入主畫面」開啟完整全螢幕');
+                showToast('💡 iPad 建議使用 Safari「分享 ➔ 加入主畫面」開啟完整全螢幕');
               });
             } else if (isFs && exitFs) {
               exitFs.call(doc);
             } else {
-              showToast('💡 iPad 請點分享鈕選「加入主畫面」即享 100% 全螢幕');
+              showToast('💡 iPad 請點分享鈕選「加入主畫面」即享 100% 原生全螢幕');
             }
+          });
+        }
+
+        // Reset Progress Modal & Action
+        var resetBtn = document.getElementById('resetBtn');
+        var resetModal = document.getElementById('resetModal');
+        var resetCancelBtn = document.getElementById('resetCancelBtn');
+        var resetConfirmBtn = document.getElementById('resetConfirmBtn');
+
+        if (resetBtn && resetModal) {
+          resetBtn.addEventListener('click', function () {
+            resetModal.classList.add('open');
+          });
+        }
+        if (resetCancelBtn && resetModal) {
+          resetCancelBtn.addEventListener('click', function () {
+            resetModal.classList.remove('open');
+          });
+        }
+        if (resetConfirmBtn && resetModal) {
+          resetConfirmBtn.addEventListener('click', function () {
+            state.chapter = 'ch1';
+            state.camp = 'ch1_construction';
+            state.checked = Object.assign({}, DEFAULT_CHECKED);
+            state.lily100 = false;
+            state.preset = 'heal';
+            state.expanded = Object.assign({}, DEFAULT_EXPANDED);
+            state.activeView = 'guide';
+            state.showCompletedCamps = false;
+            state.sessionTouchedCamp = '';
+
+            saveKey('chapter', state.chapter);
+            saveKey('camp', state.camp);
+            saveKey('checked', state.checked);
+            saveKey('lily100', 'false');
+            saveKey('preset', state.preset);
+            saveKey('expanded', state.expanded);
+
+            resetModal.classList.remove('open');
+            renderAll(false);
+            showToast('↺ 已重設回初始「施工區」預設狀態');
           });
         }
       }
 
-      // Boot HUD
+      // Boot v2.0 iPadOS Split-View HUD
       loadState();
-      renderTopStatus();
-      renderChapterAxis();
-      // On initial load, if on anchored chapter, scroll smoothly to anchored camp
-      var anchorInfoOnBoot = findCampInfo(state.camp);
-      var shouldScrollBoot = Boolean(anchorInfoOnBoot && anchorInfoOnBoot.chapter.id === state.chapter);
-      renderLeftColumn(shouldScrollBoot);
-      renderPresetUI();
+      renderAll(false);
       bindEvents();
     })();
   </script>
