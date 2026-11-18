@@ -1,0 +1,2404 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e13" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="劍星戰術板" />
+  <title>《劍星》橫放平板全螢幕戰術板｜Stellar Blade Tactical HUD</title>
+  <link rel="manifest" href="./manifest.json" />
+  <style>
+    :root {
+      --bg-deep: #090c10;
+      --bg-panel: #11161f;
+      --bg-card: #161d29;
+      --bg-card-hover: #1c2535;
+      --bg-elevated: #202a3b;
+      --border-dim: #263246;
+      --border-bright: #354763;
+      --text-main: #e2e8f0;
+      --text-sub: #94a3b8;
+      --text-muted: #64748b;
+      --neon-cyan: #2dd4bf;
+      --neon-cyan-dim: rgba(45, 212, 191, 0.14);
+      --neon-blue: #38bdf8;
+      --neon-blue-dim: rgba(56, 189, 248, 0.16);
+      --neon-purple: #c084fc;
+      --neon-purple-dim: rgba(192, 132, 252, 0.16);
+      --neon-amber: #fbbf24;
+      --neon-amber-dim: rgba(251, 191, 36, 0.15);
+      --neon-red: #f87171;
+      --neon-red-strong: #ef4444;
+      --neon-red-dim: rgba(239, 68, 68, 0.16);
+      --neon-green: #34d399;
+      --neon-green-dim: rgba(52, 211, 153, 0.15);
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-sm: 8px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100dvh;
+      background-color: var(--bg-deep);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* App Shell */
+    .hud-shell {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100dvh;
+      padding: calc(6px + var(--safe-top)) calc(10px + var(--safe-right)) calc(8px + var(--safe-bottom)) calc(10px + var(--safe-left));
+      gap: 8px;
+    }
+
+    /* Top Utility & Axis Header */
+    .top-deck {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-lg);
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--neon-cyan);
+      white-space: nowrap;
+    }
+
+    .brand-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--neon-cyan);
+      box-shadow: 0 0 8px var(--neon-cyan);
+    }
+
+    .anchor-jump-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--neon-cyan-dim);
+      color: var(--neon-cyan);
+      border: 1px solid rgba(45, 212, 191, 0.4);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 36px;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .anchor-jump-btn:active {
+      transform: scale(0.97);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Lily 100% Switch */
+    .lily-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-bright);
+      border-radius: 999px;
+      padding: 5px 12px;
+      min-height: 38px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      transition: all 0.2s;
+    }
+
+    .lily-toggle.is-ready {
+      background: var(--neon-green-dim);
+      border-color: var(--neon-green);
+      color: var(--neon-green);
+      box-shadow: 0 0 10px rgba(52, 211, 153, 0.18);
+    }
+
+    .lily-toggle.is-warn {
+      border-color: rgba(251, 191, 36, 0.55);
+      color: var(--neon-amber);
+    }
+
+    .lily-pill {
+      width: 34px;
+      height: 18px;
+      border-radius: 999px;
+      background: #2b3548;
+      position: relative;
+      transition: background 0.2s;
+    }
+
+    .lily-pill::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #cbd5e1;
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .lily-toggle.is-ready .lily-pill {
+      background: rgba(52, 211, 153, 0.35);
+    }
+
+    .lily-toggle.is-ready .lily-pill::after {
+      transform: translateX(16px);
+      background: var(--neon-green);
+    }
+
+    .hud-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      padding: 6px 11px;
+      min-height: 38px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+
+    .hud-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-bright);
+    }
+
+    .hud-btn:active {
+      transform: scale(0.97);
+    }
+
+    .progress-stat {
+      font-size: 12.5px;
+      color: var(--text-sub);
+      background: var(--bg-deep);
+      border: 1px solid var(--border-dim);
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    /* Chapter Axis Strip */
+    .chapter-axis {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+
+    .chapter-axis::-webkit-scrollbar {
+      display: none;
+    }
+
+    .axis-arrow {
+      color: var(--text-muted);
+      font-size: 12px;
+      flex-shrink: 0;
+      padding: 0 1px;
+    }
+
+    .axis-node {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--bg-card);
+      color: var(--text-sub);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      padding: 7px 11px;
+      min-height: 42px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+
+    .axis-node .chap-num {
+      font-size: 11px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(148, 163, 184, 0.14);
+      color: var(--text-main);
+    }
+
+    .axis-node.active {
+      background: var(--neon-cyan-dim);
+      color: var(--neon-cyan);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 12px rgba(45, 212, 191, 0.18);
+    }
+
+    .axis-node.active .chap-num {
+      background: var(--neon-cyan);
+      color: #061214;
+    }
+
+    .axis-node.has-anchor::after {
+      content: "📍";
+      font-size: 12px;
+    }
+
+    .axis-node.red-light {
+      background: var(--neon-red-dim);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.55);
+    }
+
+    .axis-node.red-light.active {
+      background: rgba(239, 68, 68, 0.28);
+      color: #fecaca;
+      border-color: var(--neon-red-strong);
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.32);
+    }
+
+    .axis-pair-slash {
+      color: var(--neon-amber);
+      font-weight: 800;
+      font-size: 14px;
+      flex-shrink: 0;
+      padding: 0 1px;
+    }
+
+    .pulse-red {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--neon-red-strong);
+      box-shadow: 0 0 8px var(--neon-red-strong);
+      animation: pulseGlow 1.8s infinite ease-in-out;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.82); }
+    }
+
+    /* Main Split Grid */
+    .main-grid {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1.22fr 0.98fr;
+      gap: 10px;
+    }
+
+    .column-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: rgba(22, 29, 41, 0.65);
+      flex-shrink: 0;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-main);
+    }
+
+    .panel-subtitle {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .panel-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .panel-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .panel-scroll::-webkit-scrollbar-thumb {
+      background: #28354a;
+      border-radius: 3px;
+    }
+
+    /* Banner Alerts inside Left Panel */
+    .chapter-banner {
+      background: linear-gradient(135deg, rgba(45, 212, 191, 0.1), rgba(22, 29, 41, 0.9));
+      border: 1px solid rgba(45, 212, 191, 0.32);
+      border-radius: var(--radius-md);
+      padding: 11px 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .chapter-banner.is-red {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(28, 19, 24, 0.95));
+      border-color: var(--neon-red-strong);
+    }
+
+    .chapter-banner-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--neon-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .chapter-banner.is-red .chapter-banner-title {
+      color: #fca5a5;
+    }
+
+    .chapter-banner-desc {
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text-main);
+    }
+
+    /* Camp Cards */
+    .camp-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .camp-card.is-anchored {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.28), 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    .camp-header {
+      padding: 11px 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.015);
+      min-height: 50px;
+    }
+
+    .camp-header-left {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .camp-chevron {
+      font-size: 12px;
+      color: var(--text-sub);
+      transition: transform 0.2s;
+      width: 16px;
+      text-align: center;
+    }
+
+    .camp-card.expanded .camp-chevron {
+      transform: rotate(90deg);
+      color: var(--neon-cyan);
+    }
+
+    .camp-name {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .camp-card.is-anchored .camp-name {
+      color: var(--neon-cyan);
+    }
+
+    .camp-tag {
+      font-size: 11.5px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-weight: 700;
+      background: rgba(148, 163, 184, 0.15);
+      color: var(--text-sub);
+      white-space: nowrap;
+    }
+
+    .camp-tag.supply {
+      background: var(--neon-amber-dim);
+      color: var(--neon-amber);
+    }
+
+    .camp-tag.warn {
+      background: var(--neon-red-dim);
+      color: #fca5a5;
+    }
+
+    .anchor-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      min-height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-bright);
+      background: var(--bg-deep);
+      color: var(--text-sub);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .anchor-btn.active {
+      background: var(--neon-cyan);
+      border-color: var(--neon-cyan);
+      color: #041311;
+    }
+
+    .camp-body {
+      display: none;
+      padding: 4px 13px 13px 13px;
+      border-top: 1px solid rgba(38, 50, 70, 0.65);
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .camp-card.expanded .camp-body {
+      display: flex;
+    }
+
+    .route-note {
+      font-size: 13px;
+      line-height: 1.55;
+      color: #cbd5e1;
+      background: rgba(9, 12, 16, 0.55);
+      border-left: 3px solid var(--neon-blue);
+      padding: 8px 11px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin-top: 6px;
+    }
+
+    /* Checkable Tactical Items */
+    .check-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      padding: 11px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-dim);
+      cursor: pointer;
+      min-height: 50px;
+      transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    }
+
+    .check-item:active {
+      transform: scale(0.992);
+    }
+
+    .check-item.checked {
+      background: rgba(17, 24, 35, 0.72);
+      border-color: rgba(52, 211, 153, 0.35);
+    }
+
+    .check-box {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 2px solid var(--border-bright);
+      background: var(--bg-deep);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+      font-size: 14px;
+      font-weight: 900;
+      color: transparent;
+      transition: all 0.15s;
+    }
+
+    .check-item.checked .check-box {
+      background: var(--neon-green);
+      border-color: var(--neon-green);
+      color: #04160f;
+    }
+
+    .check-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .check-title-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .type-pill {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+    }
+
+    .type-pill.boss {
+      background: var(--neon-red-dim);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .type-pill.gear {
+      background: var(--neon-amber-dim);
+      color: var(--neon-amber);
+      border: 1px solid rgba(251, 191, 36, 0.38);
+    }
+
+    .type-pill.route {
+      background: var(--neon-cyan-dim);
+      color: var(--neon-cyan);
+      border: 1px solid rgba(45, 212, 191, 0.35);
+    }
+
+    .type-pill.quest {
+      background: var(--neon-purple-dim);
+      color: var(--neon-purple);
+      border: 1px solid rgba(192, 132, 252, 0.38);
+    }
+
+    .check-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.35;
+    }
+
+    .check-item.checked .check-title {
+      text-decoration: line-through;
+      color: var(--text-sub);
+    }
+
+    .check-detail {
+      font-size: 12.8px;
+      line-height: 1.55;
+      color: #b6c4d6;
+    }
+
+    .check-item.checked .check-detail {
+      color: var(--text-muted);
+    }
+
+    /* Inline Tactical Callout Tags */
+    .key-blue {
+      color: var(--neon-blue);
+      background: var(--neon-blue-dim);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .key-purple {
+      color: var(--neon-purple);
+      background: var(--neon-purple-dim);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .key-amber {
+      color: var(--neon-amber);
+      background: var(--neon-amber-dim);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .key-red {
+      color: #fca5a5;
+      background: var(--neon-red-dim);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    /* Right Column: DualSense Edge & Combat Cards */
+    .preset-Grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+    }
+
+    .preset-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 9px 8px;
+      min-height: 56px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      text-align: center;
+      transition: all 0.15s;
+    }
+
+    .preset-btn .p-name {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .preset-btn .p-sub {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .preset-btn.active {
+      background: var(--neon-cyan-dim);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 12px rgba(45, 212, 191, 0.16);
+    }
+
+    .preset-btn.active .p-name {
+      color: var(--neon-cyan);
+    }
+
+    .preset-btn.active .p-sub {
+      color: #cbd5e1;
+    }
+
+    .controller-stage {
+      background: radial-gradient(circle at 50% 48%, rgba(45, 212, 191, 0.08), rgba(9, 12, 16, 0.92) 72%);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 10px 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .controller-svg {
+      width: 100%;
+      max-width: 500px;
+      height: auto;
+      display: block;
+    }
+
+    .preset-desc-bar {
+      width: 100%;
+      background: rgba(22, 29, 41, 0.9);
+      border: 1px solid rgba(45, 212, 191, 0.3);
+      border-radius: var(--radius-sm);
+      padding: 8px 11px;
+      font-size: 12.8px;
+      line-height: 1.5;
+      color: var(--text-main);
+    }
+
+    .tip-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 11px 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .tip-card.highlight-amber {
+      border-color: rgba(251, 191, 36, 0.45);
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.09), rgba(22, 29, 41, 0.95));
+    }
+
+    .tip-title {
+      font-size: 13.8px;
+      font-weight: 800;
+      color: var(--neon-amber);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tip-title.cyan {
+      color: var(--neon-cyan);
+    }
+
+    .tip-body {
+      font-size: 12.8px;
+      line-height: 1.58;
+      color: #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .skill-tier {
+      background: var(--bg-deep);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+    }
+
+    .skill-tier strong {
+      color: var(--neon-cyan);
+    }
+
+    /* Toast Notification */
+    .hud-toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #102422;
+      color: var(--neon-cyan);
+      border: 1px solid var(--neon-cyan);
+      border-radius: 999px;
+      padding: 9px 18px;
+      font-size: 13.5px;
+      font-weight: 700;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s, transform 0.22s;
+      z-index: 999;
+    }
+
+    .hud-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Portrait or Small Screen Fallback */
+    @media (max-width: 900px) {
+      html, body {
+        height: auto;
+        min-height: 100dvh;
+        overflow-y: auto;
+      }
+      .hud-shell {
+        height: auto;
+        min-height: 100dvh;
+      }
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+      .panel-scroll {
+        max-height: none;
+        overflow-y: visible;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="hud-shell">
+    <!-- Top Bar & Full-Width 10-Chapter + Red-Light Warning Axis -->
+    <header class="top-deck">
+      <div class="top-bar">
+        <div class="brand-group">
+          <div class="brand-badge">
+            <span class="brand-dot"></span>
+            <span>《劍星》戰術板 HUD</span>
+          </div>
+          <button type="button" id="anchorJumpBtn" class="anchor-jump-btn" title="點擊立即跳回目前錨定營地">
+            <span>📍 錨點：</span>
+            <span id="anchorLabelText">艾多城7號 — 施工區</span>
+          </button>
+          <div id="overallProgress" class="progress-stat">完成 2 / 0</div>
+        </div>
+
+        <div class="top-actions">
+          <button type="button" id="lilyToggleBtn" class="lily-toggle is-warn" role="switch" aria-checked="false">
+            <span id="lilyStatusIcon">🌸 百合進度條 100% 檢核：未滿</span>
+            <span class="lily-pill"></span>
+          </button>
+          <button type="button" id="exportBtn" class="hud-btn">⬇ 匯出進度 JSON</button>
+          <button type="button" id="importBtn" class="hud-btn">⬆ 匯入還原</button>
+          <input type="file" id="importFileInput" accept="application/json,.json" style="display:none" />
+          <button type="button" id="fullscreenBtn" class="hud-btn" title="切換全螢幕">⛶ 全螢幕</button>
+        </div>
+      </div>
+
+      <!-- Full-Width 10-Chapter & Red-Light Axis -->
+      <nav id="chapterAxis" class="chapter-axis" aria-label="全10章推進與紅燈預警軸"></nav>
+    </header>
+
+    <!-- Below: Left & Right Dual Columns -->
+    <main class="main-grid">
+      <!-- Left Column: Camp Route, Core Upgrades & Boss Breakdown -->
+      <section class="column-panel" aria-label="營地順路核心與必打戰鬥支線勾選單">
+        <div class="panel-header">
+          <h2 id="leftPanelTitle" class="panel-title">1. 艾多城7號 — 營地推進與頭目拆招</h2>
+          <span class="panel-subtitle">略過純跑腿收集・點擊單指打勾即存檔</span>
+        </div>
+        <div id="leftScroll" class="panel-scroll"></div>
+      </section>
+
+      <!-- Right Column: DualSense Edge Visualized Setup & Effort-Saving Tips -->
+      <section class="column-panel" aria-label="DualSense Edge 視覺化配置與省力戰鬥錦囊">
+        <div class="panel-header">
+          <h2 class="panel-title">🎮 DualSense Edge 省力配置 ＆ 實戰錦囊</h2>
+          <span class="panel-subtitle">點擊背鍵流派即時切換圖示</span>
+        </div>
+        <div class="panel-scroll">
+          <!-- Back-Paddle 3 Presets Switcher -->
+          <div class="preset-Grid" role="tablist" aria-label="背鍵流派切換">
+            <button type="button" class="preset-btn" data-preset="heal">
+              <span class="p-name">① 移動喝水流</span>
+              <span class="p-sub">故事首推：左↑ / 右○</span>
+            </button>
+            <button type="button" class="preset-btn" data-preset="parry">
+              <span class="p-name">② 雙中指打鐵流</span>
+              <span class="p-sub">招架特化：左L1 / 右○</span>
+            </button>
+            <button type="button" class="preset-btn" data-preset="sprint">
+              <span class="p-name">③ 省力跑圖流</span>
+              <span class="p-sub">探索護指：左L3 / 右○</span>
+            </button>
+          </div>
+
+          <!-- Crisp SVG DualSense Edge Blueprint -->
+          <div class="controller-stage">
+            <svg class="controller-svg" viewBox="0 0 560 305" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="DualSense Edge 視覺化設定圖">
+              <defs>
+                <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              <!-- Top Hardware Trigger Stop Callout Banner -->
+              <rect x="135" y="6" width="290" height="28" rx="7" fill="#1b2434" stroke="#fbbf24" stroke-width="1.3" />
+              <text x="280" y="24" text-anchor="middle" fill="#fbbf24" font-size="12.5" font-weight="800">
+                ⚙ L2 / R2 實體滑桿：調至「最短鍵程（最上段）」
+              </text>
+              <line x1="175" y1="34" x2="152" y2="54" stroke="#fbbf24" stroke-width="1.3" stroke-dasharray="3 3" />
+              <line x1="385" y1="34" x2="408" y2="54" stroke="#fbbf24" stroke-width="1.3" stroke-dasharray="3 3" />
+
+              <!-- L2 / R2 & L1 / R1 Bumpers -->
+              <path d="M126 64 Q152 46 188 55 L192 72 L124 76 Z" fill="#182232" stroke="#fbbf24" stroke-width="1.6" />
+              <text x="157" y="67" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="800">L2 短</text>
+
+              <path d="M434 64 Q408 46 372 55 L368 72 L436 76 Z" fill="#182232" stroke="#fbbf24" stroke-width="1.6" />
+              <text x="403" y="67" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="800">R2 短</text>
+
+              <rect id="svgBtnL1" x="120" y="75" width="72" height="20" rx="6" fill="#1f293d" stroke="#475569" stroke-width="1.5" />
+              <text id="svgTxtL1" x="156" y="89" text-anchor="middle" fill="#cbd5e1" font-size="11.5" font-weight="800">L1 招架</text>
+
+              <rect x="368" y="75" width="72" height="20" rx="6" fill="#1f293d" stroke="#475569" stroke-width="1.5" />
+              <text x="404" y="89" text-anchor="middle" fill="#cbd5e1" font-size="11.5" font-weight="800">R1 爆發</text>
+
+              <!-- Controller Main Body Silhouette -->
+              <path d="M122 95
+                       Q94 115 86 168
+                       Q78 222 102 246
+                       Q122 262 146 236
+                       L182 194
+                       L378 194
+                       L414 236
+                       Q438 262 458 246
+                       Q482 222 474 168
+                       Q466 115 438 95 Z"
+                    fill="#131a26" stroke="#3b4d6b" stroke-width="2" />
+
+              <!-- Touchpad -->
+              <path d="M204 96 L356 96 L346 144 Q280 150 214 144 Z" fill="#0d131d" stroke="#2dd4bf" stroke-opacity="0.45" stroke-width="1.4" />
+              <text x="280" y="123" text-anchor="middle" fill="#64748b" font-size="10.5" font-weight="700">DUALSENSE EDGE</text>
+
+              <!-- D-Pad Left -->
+              <!-- Up Button (Heal) -->
+              <rect id="svgBtnUp" x="143" y="110" width="22" height="22" rx="4" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
+              <text id="svgTxtUp" x="154" y="125" text-anchor="middle" fill="#cbd5e1" font-size="12" font-weight="900">↑</text>
+              <!-- Down / Left / Right -->
+              <rect x="143" y="150" width="22" height="20" rx="4" fill="#192231" stroke="#334155" stroke-width="1.2" />
+              <text x="154" y="164" text-anchor="middle" fill="#94a3b8" font-size="11">↓</text>
+              <rect x="121" y="131" width="21" height="19" rx="4" fill="#192231" stroke="#334155" stroke-width="1.2" />
+              <rect x="166" y="131" width="21" height="19" rx="4" fill="#192231" stroke="#334155" stroke-width="1.2" />
+
+              <!-- Right Face Buttons -->
+              <!-- Triangle -->
+              <circle cx="405" cy="118" r="11" fill="#192231" stroke="#475569" stroke-width="1.3" />
+              <text x="405" y="122" text-anchor="middle" fill="#cbd5e1" font-size="11" font-weight="700">△</text>
+              <!-- Square -->
+              <circle cx="381" cy="141" r="11" fill="#192231" stroke="#475569" stroke-width="1.3" />
+              <text x="381" y="145" text-anchor="middle" fill="#cbd5e1" font-size="11" font-weight="700">□</text>
+              <!-- Cross -->
+              <circle cx="405" cy="164" r="11" fill="#192231" stroke="#475569" stroke-width="1.3" />
+              <text x="405" y="168" text-anchor="middle" fill="#cbd5e1" font-size="11" font-weight="700">✕</text>
+              <!-- Circle (Always mapped to Right Back Paddle) -->
+              <circle id="svgBtnCircle" cx="429" cy="141" r="12" fill="rgba(56, 189, 248, 0.24)" stroke="#38bdf8" stroke-width="2" filter="url(#neonGlow)" />
+              <text x="429" y="145" text-anchor="middle" fill="#38bdf8" font-size="12" font-weight="900">○</text>
+
+              <!-- Left Stick (L3 + Quick Curve) -->
+              <circle id="svgBtnL3" cx="218" cy="174" r="22" fill="#0f1520" stroke="#38bdf8" stroke-width="1.8" />
+              <circle cx="218" cy="174" r="13" fill="#1e293b" />
+              <text id="svgTxtL3" x="218" y="178" text-anchor="middle" fill="#e2e8f0" font-size="10.5" font-weight="800">L3</text>
+
+              <!-- Left Stick Quick Sensitivity Callout -->
+              <rect x="6" y="162" width="128" height="36" rx="7" fill="#141e2e" stroke="#38bdf8" stroke-width="1.3" />
+              <text x="70" y="177" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="800">左搖桿靈敏度</text>
+              <text x="70" y="192" text-anchor="middle" fill="#e2e8f0" font-size="11.5" font-weight="800">設為「快速 Quick」</text>
+              <line x1="134" y1="180" x2="195" y2="175" stroke="#38bdf8" stroke-width="1.3" stroke-dasharray="3 3" />
+
+              <!-- Right Stick (R3) -->
+              <circle cx="342" cy="174" r="22" fill="#0f1520" stroke="#475569" stroke-width="1.6" />
+              <circle cx="342" cy="174" r="13" fill="#1e293b" />
+              <text x="342" y="178" text-anchor="middle" fill="#94a3b8" font-size="10.5" font-weight="700">R3</text>
+
+              <!-- Edge Fn Buttons -->
+              <rect x="205" y="201" width="26" height="11" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1" />
+              <text x="218" y="209.5" text-anchor="middle" fill="#94a3b8" font-size="8.5" font-weight="700">Fn</text>
+              <rect x="329" y="201" width="26" height="11" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1" />
+              <text x="342" y="209.5" text-anchor="middle" fill="#94a3b8" font-size="8.5" font-weight="700">Fn</text>
+
+              <!-- Back Paddles (LB Left Back & RB Right Back) Highlight Boxes -->
+              <!-- Left Back Paddle Box -->
+              <path d="M214 218 L188 242" stroke="#2dd4bf" stroke-width="2" />
+              <rect x="20" y="238" width="228" height="58" rx="10" fill="#0f2322" stroke="#2dd4bf" stroke-width="2" filter="url(#neonGlow)" />
+              <text x="134" y="258" text-anchor="middle" fill="#94a3b8" font-size="11.5" font-weight="700">【左背鍵 LB】（左中指撥片）</text>
+              <text id="svgLeftPaddleLabel" x="134" y="283" text-anchor="middle" fill="#2dd4bf" font-size="16" font-weight="900">↑ 方向鍵上（移動補血）</text>
+
+              <!-- Right Back Paddle Box -->
+              <path d="M346 218 L372 242" stroke="#38bdf8" stroke-width="2" />
+              <rect x="312" y="238" width="228" height="58" rx="10" fill="#102030" stroke="#38bdf8" stroke-width="2" filter="url(#neonGlow)" />
+              <text x="426" y="258" text-anchor="middle" fill="#94a3b8" font-size="11.5" font-weight="700">【右背鍵 RB】（右中指撥片）</text>
+              <text id="svgRightPaddleLabel" x="426" y="283" text-anchor="middle" fill="#38bdf8" font-size="16" font-weight="900">○ 閃避（閃現／擊退）</text>
+            </svg>
+
+            <div id="presetDescBar" class="preset-desc-bar"></div>
+          </div>
+
+          <!-- Effort-Saving Cheat Card 1: TETRASTAR -->
+          <div class="tip-card highlight-amber">
+            <div class="tip-title">🔓 TETRASTAR 侵入補給箱「免倒數」零壓力解法</div>
+            <div class="tip-body">
+              <div>
+                手把按 <strong>Options</strong> ➔ <strong>設定</strong> ➔ <strong>協助工具（Accessibility）</strong> ➔ 開啟 <strong>「停用謎題時間限制」</strong>！開啟後所有方向鍵輸入寶箱與駭入小遊戲<strong>倒數計時永久凍結</strong>，暗房慢按零失誤。
+              </div>
+              <div>
+                💡 <strong>護肝加碼</strong>：同頁面可一併開啟<strong>「動作輔助」</strong>與<strong>「簡化 QTE」</strong>，頭目關鍵閃光連段會自動進入慢動作提示，大幅降低手指負擔。
+              </div>
+            </div>
+          </div>
+
+          <!-- Effort-Saving Cheat Card 2: High-CP Skills & Color Flash Quick Ref -->
+          <div class="tip-card">
+            <div class="tip-title cyan">⚡ 頭目色光反應公式 ＆ 各期高 CP 技能點法</div>
+            <div class="tip-body">
+              <div class="skill-tier">
+                <strong>色光鐵則：</strong>
+                <span class="key-blue">藍光 ＝ 劍閃藍光按 ↑+○ 閃現繞背</span> ｜
+                <span class="key-purple">紫光 ＝ 劍閃紫光按 ↓+○ 擊退斷招</span> ｜
+                <span class="key-amber">黃光 ＝ 不可擋，純按 ○ 閃避</span> ｜
+                <span class="key-red">紅光 ＝ 多段瘋狗連擊（擋或貝塔斷招）</span>
+              </div>
+              <div class="skill-tier">
+                <strong>初期必點（艾多城7號）：</strong>生存線必點「完美閃避」、「<strong>閃現（↑+○）</strong>」、「<strong>擊退（↓+○）</strong>」與「招架／閃避回貝塔能量」；攻擊線點「伏擊」清背對小怪。
+              </div>
+              <div class="skill-tier">
+                <strong>中期主力（廢土～11號矩陣）：</strong>點滿「雙重跳躍」；貝塔技能主升 <strong>L1+○（衝擊波，遠距強制斷頭目紅紫光神技）</strong> 與 <strong>L1+□（破盾斬擊）</strong>。
+              </div>
+              <div class="skill-tier">
+                <strong>後期決戰（大沙漠～終局）：</strong>爆發技能主升 <strong>R1+○（懲戒：長無敵幀＋強制倒地）</strong>，強化 <strong>L3+R3 迅馳模式</strong> 破盾傷害，營地常備 2 顆 <strong>WB 泵浦（原地復活）</strong> 穩過雙王與最終戰！
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="hudToast" class="hud-toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // =====================================================================
+      // Storage Keys (Strictly prefixed with sb_hud_v1_)
+      // =====================================================================
+      var STORAGE_KEYS = {
+        chapter: 'sb_hud_v1_chapter',
+        camp: 'sb_hud_v1_camp',
+        checked: 'sb_hud_v1_checked',
+        lily100: 'sb_hud_v1_lily100',
+        preset: 'sb_hud_v1_preset',
+        expanded: 'sb_hud_v1_expanded'
+      };
+
+      var DEFAULT_CHECKED = {
+        'ch1_boss_abaddon': true,
+        'ch1_boss_corrupter': true
+      };
+
+      var DEFAULT_EXPANDED = {
+        'ch1_construction': true
+      };
+
+      // =====================================================================
+      // DualSense Edge Back-Paddle Presets Data
+      // =====================================================================
+      var PRESETS = {
+        heal: {
+          title: '① 移動喝水流（故事模式首推）',
+          leftLabel: '↑ 方向鍵上（移動補血）',
+          rightLabel: '○ 閃避（閃現／擊退）',
+          highlight: 'up',
+          desc: '<strong>故事模式首推：</strong>左拇指全程推左搖桿走位<strong>不必停下來按十字鍵</strong>，左中指一壓背鍵瞬間喝水補血；右中指專職 ○ 閃避、藍光閃現與紫光擊退，右拇指輕鬆連按 □／△ 砍殺！'
+        },
+        parry: {
+          title: '② 雙中指打鐵流（招架特化）',
+          leftLabel: 'L1 防禦／完美招架',
+          rightLabel: '○ 閃避（閃現／擊退）',
+          highlight: 'l1',
+          desc: '<strong>人形刀客頭目特化：</strong>將 L1 招架改由清脆微動的左背鍵觸發，解放左食指緊繃感；<strong>左中指擋刀、右中指閃避</strong>，迎戰金剛獸、貝利亞爾與渡鴉時節奏感極佳！'
+        },
+        sprint: {
+          title: '③ 省力跑圖流（廢土／大沙漠探索）',
+          leftLabel: 'L3 衝刺奔跑（護拇指）',
+          rightLabel: '○ 閃避／空中衝刺',
+          highlight: 'l3',
+          desc: '<strong>開放大地圖探索首選：</strong>廢土與大沙漠跑圖距離長，將 L3 綁定左背鍵免去<strong>用力下壓左搖桿造成大拇指關節酸痛與搖桿漂移</strong>，開箱跑酷最省力！'
+        }
+      };
+
+      // =====================================================================
+      // Full 10-Chapter + 2 Red-Light Tactical Dataset (Taiwan Official Terms)
+      // =====================================================================
+      var CHAPTERS = [
+        {
+          id: 'ch1',
+          num: '1',
+          shortTitle: '艾多城7號',
+          fullTitle: '1. 艾多城7號（Eidos 7）— 星降區至隕石坑',
+          isRedLight: false,
+          banner: '開局教學與核心基本功關卡。目前已推進至<strong>「施工區」補給營地</strong>，前兩場頭目（亞巴頓、腐敗者）已預設勾選完成！',
+          camps: [
+            {
+              id: 'ch1_parking',
+              name: '寂靜街道 ➔ 立體停車場頂樓（已完成前段）',
+              tag: '前段已通關',
+              tagType: '',
+              note: '沿寂靜街道推進至立體停車場頂樓補給營地，學習完美招架（L1）與貝塔技能（L1+□）。',
+              items: [
+                {
+                  id: 'ch1_boss_abaddon',
+                  type: 'boss',
+                  badge: '頭目',
+                  title: '立體停車場頂樓：【亞巴頓（Abaddon）】',
+                  detail: '雙刀雷電頭目。注意雙刀交叉蓄力後的落雷斬與遠距雷電劍氣，善用 L1 招架削減黃色平衡點處決。'
+                }
+              ]
+            },
+            {
+              id: 'ch1_plaza',
+              name: '廢棄車站 ➔ 記憶之塔廣場（已完成前段）',
+              tag: '前段已通關',
+              tagType: '',
+              note: '搭乘單軌電車抵達淹水商業區上層，穿越記憶之塔入口營地迎戰腐敗者。',
+              items: [
+                {
+                  id: 'ch1_boss_corrupter',
+                  type: 'boss',
+                  badge: '頭目',
+                  title: '記憶之塔廣場：【腐敗者（Corrupter）】',
+                  detail: '馬形遠程噴酸孽奇拔。貼身繞側砍擊最安全，拉開距離時提防連續酸液球與高速衝撞。'
+                }
+              ]
+            },
+            {
+              id: 'ch1_construction',
+              name: '艾多城7號 — 施工區（目前主力動線）',
+              tag: '補給營地',
+              tagType: 'supply',
+              note: '🎯 <strong>施工區標準不漏拿三步動線</strong>：先拿齊 3 張起重機 ID 卡與神裝【保護型外脊裝】➔ 起重機先左後右搜刮再搭橋 ➔ 進地下區直奔隕石坑！',
+              items: [
+                {
+                  id: 'ch1_con_step1',
+                  type: 'gear',
+                  badge: '順路必拿',
+                  title: '(1) 集齊 3 張起重機 ID 卡 ＋【保護型外脊裝】＋ 血瓶擴充',
+                  detail: '分別前往<strong>左棟</strong>、<strong>右棟（1樓啟動發電機開電梯上3樓）</strong>、<strong>右後方建築</strong>拿齊 3 張起重機 ID 卡；右後方高台橘紅箱必拿<strong>【保護型外脊裝】</strong>（大幅減傷＋護盾回血），並砍死發光小機器人拿<strong>維生包擴充模組（血瓶擴充）</strong>。'
+                },
+                {
+                  id: 'ch1_con_step2',
+                  type: 'route',
+                  badge: '機關搜刮',
+                  title: '(2) 起重機「先左移、再右移」搜刮雙寶，最後搭橋進地下區',
+                  detail: '回到控制台操作起重機：<strong>① 先左移</strong>跳進左側廢墟撿<strong>【機體核心】</strong>；<strong>② 再右移撞破石雕牆</strong>進去拿<strong>「熱情如火」奈米衣</strong>；③ 最後將鋼樑停回中央搭橋進入<strong>城市地下區</strong>。'
+                },
+                {
+                  id: 'ch1_con_step3',
+                  type: 'route',
+                  badge: '技能檢核',
+                  title: '(3) 城市地下區沿途撿核心 ➔ 抵達「隕石坑」營地點出藍光＆紫光神技',
+                  detail: '地下排水道沿途岔路順手撿<strong>【機體核心】</strong>與<strong>【貝塔核心】</strong>，抵達關底前<strong>「隕石坑」補給營地</strong>，務必在技能機點出 <span class="key-blue">閃現（藍光 ↑+○）</span> 與 <span class="key-purple">擊退（紫光 ↓+○）</span>！'
+                },
+                {
+                  id: 'ch1_boss_gigas',
+                  type: 'boss',
+                  badge: '關底頭目',
+                  title: '隕石坑：【金剛獸（Gigas）】拆招重點',
+                  detail: '巨猿型力量王。捶胸咆哮紅光五連捶先拉開或擋前兩拍；雙拳高舉閃<span class="key-purple">紫光立刻按 ↓+○ 擊退</span>直接踹倒大硬直；抓技閃<span class="key-blue">藍光看劍身發亮按 ↑+○ 閃現</span>繞背狂砍；半血燃火砸地波跳躍閃開。'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'ch2',
+          num: '2',
+          shortTitle: '曦安',
+          fullTitle: '2. 曦安（Xion）— 最後人類都市與百合工坊整備',
+          isRedLight: false,
+          banner: '主城樞紐。<strong>略過純找貓／找人瑣碎跑腿</strong>，僅鎖定解鎖系統功能、外脊裝欄位與<strong>大幅推進「百合進度條」</strong>之關鍵支線！',
+          camps: [
+            {
+              id: 'ch2_xion_hub',
+              name: '曦安停機坪 ➔ 謁見堂 ➔ 姊妹廢品場',
+              tag: '主城整備',
+              tagType: 'supply',
+              note: '見過先知奧卡爾後，前往百合工坊開啟無人機改造與外脊裝強化，順路向卡雅（姊妹廢品場）購買核心升級素材。',
+              items: [
+                {
+                  id: 'ch2_lily_bench',
+                  type: 'gear',
+                  badge: '系統解鎖',
+                  title: '百合工坊整備：強化血瓶上限、武器攻擊力與【保護型外脊裝】',
+                  detail: '把艾多城7號撿到的攻擊力核心、機體核心與外脊裝升至 +2/+3，生存力立刻翻倍。'
+                },
+                {
+                  id: 'ch2_quest_kaya',
+                  type: 'quest',
+                  badge: '關鍵支線',
+                  title: '卡雅支線《拾荒者的故事》＆ 恩雅與蘇《仰望你》',
+                  detail: '卡雅支線正好順路引導前往廢土峽谷拿機車零件並開圖；恩雅支線於酒吧觸發，後續順路在廢土／矩陣解完。'
+                },
+                {
+                  id: 'ch2_quest_lily_docs',
+                  type: 'quest',
+                  badge: '百合進度',
+                  title: '必接百合進度條關鍵支線：《禁忌》、《記憶之櫃》、《天使之墓》',
+                  detail: '凡涉及「母主領域真相、死去天使記憶棒、人類舊歷史書籍（法蘭西斯書店）」的任務都會<strong>大幅增加百合進度條</strong>，務必在紅燈1前清完！'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'ch3',
+          num: '3',
+          shortTitle: '廢土',
+          fullTitle: '3. 廢土（Wasteland）— 日光塔重啟與荒原頭目群',
+          isRedLight: false,
+          banner: '第一張半開放地圖！<strong>進圖第一鐵則：直奔【日光塔】重啟電力</strong>，否則整張地圖所有營地皆無法使用！',
+          camps: [
+            {
+              id: 'ch3_solar_tower',
+              name: '貧瘠之地 ➔ 廢土日光塔入口（第一優先！）',
+              tag: '必開電力',
+              tagType: 'warn',
+              note: '一進廢土往南偏東走先到日光塔下，救出卡住的維修機器人並清掉守塔菁英怪，爬上塔頂啟動日光塔解鎖全區營地與傳送點！',
+              items: [
+                {
+                  id: 'ch3_solar_on',
+                  type: 'route',
+                  badge: '核心目標',
+                  title: '重啟【廢土日光塔】點亮全區營地與電話亭傳送',
+                  detail: '啟動後立即開啟鄰近補給營地，之後在廢土探索隨時可快速傳送回曦安交任務。'
+                },
+                {
+                  id: 'ch3_exo_suppress',
+                  type: 'gear',
+                  badge: '金色裝備',
+                  title: '順路橘紅箱：【壓制型外脊裝】＆【鏈式型外脊裝】＋ 機體／貝塔核心',
+                  detail: '西部大峽谷懸崖與中央廢料場高台箱子可拿【壓制型外脊裝】（延長敵人倒地時間），沿途死角發光屍體順手撿機體與貝塔核心。'
+                }
+              ]
+            },
+            {
+              id: 'ch3_scrapyard_bosses',
+              name: '中央廢料場 ➔ 大峽谷東部 ➔ 禁忌之地（必打戰鬥支線）',
+              tag: '頭目支線',
+              tagType: 'supply',
+              note: '以下頭目關係到紅燈2前全頭目制霸與大量武器核心獎勵，可於第一輪或大沙漠後裝備成型再回來碾壓。',
+              items: [
+                {
+                  id: 'ch3_boss_corrupter2',
+                  type: 'boss',
+                  badge: '支線頭目',
+                  title: '廢料場老闆任務：二戰【腐敗者】＆ 開啟迪格爾商店',
+                  detail: '清掉廢料場內的腐敗者即可解鎖小機器人迪格爾商店（販售外脊裝升級素材與文件，推百合進度條）。'
+                },
+                {
+                  id: 'ch3_boss_brute',
+                  type: 'boss',
+                  badge: '支線頭目',
+                  title: '禁忌之地深處（支線《緊急情況》）：【荒原巨獸（Brute）】',
+                  detail: '巨型狂暴獸。紅光揮拳連段長但轉向慢，盡量繞背輸出；看到雙拳蓄力閃<span class="key-purple">紫光按 ↓+○ 擊退</span>打斷，半血狂暴直接開貝塔技能 L1+○ 壓制。'
+                },
+                {
+                  id: 'ch3_boss_gigas2',
+                  type: 'boss',
+                  badge: '支線頭目',
+                  title: '東南隕石坑（支線《王座之主》）：強化版【金剛獸】',
+                  detail: '招式與第一關相同但血攻更高，建議中期拿到迅馳模式（L3+R3）後順路秒殺領取武器核心。'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'ch4',
+          num: '4',
+          shortTitle: '盧瓦高層',
+          fullTitle: '4. 盧瓦高層（Altess Levoire）— 純無人機遠程射擊地城',
+          isRedLight: false,
+          banner: '⚠️ <strong>特殊規則警示：本關全程封印刀劍，強制純用無人機射擊！</strong>進門前先在入口營地把彈藥買滿，背鍵切至<strong>「① 移動喝水流」</strong>最穩！',
+          camps: [
+            {
+              id: 'ch4_altess_run',
+              name: '盧瓦高層入口 ➔ 雷射實驗室 ➔ 標本保存室 ➔ 核心區營地',
+              tag: '純射擊關',
+              tagType: 'warn',
+              note: '善用 L2（已調最短鍵程）快速舉槍瞄準頭部或發光橘色弱點；雷射折射謎題只需將光束導入牆壁綠燈即可開門。',
+              items: [
+                {
+                  id: 'ch4_drone_mods',
+                  type: 'gear',
+                  badge: '順路必撿',
+                  title: '搜刮沿途【無人機升級模組】＆ 盧瓦研究紀錄（推百合進度！）',
+                  detail: '保安中心與標本室側門內有多個無人機模組與研究報告，優先升級<strong>散彈槍（近身轟飛群怪）</strong>與<strong>爆發雷射</strong>。'
+                },
+                {
+                  id: 'ch4_heart_cores',
+                  type: 'route',
+                  badge: '機關推進',
+                  title: '拔除感染培育艙柱體 ＋ 善用場地爆炸油桶清怪省子彈',
+                  detail: '遇到持盾突變體瞄準腳部或油桶引爆，進入心臟地帶前補給營地把所有特種彈藥買滿。'
+                },
+                {
+                  id: 'ch4_boss_maelstrom',
+                  type: 'boss',
+                  badge: '關底頭目',
+                  title: '深層核心：【漩渦獸（Maelstrom）】拆招重點',
+                  detail: '定點巨型肉塊王。集中火力射擊牠身上<strong>發光橘黃色腫瘤弱點</strong>可打出巨額爆傷；牠張嘴噴射橫掃酸液時橫向衝刺跳躍；吐出的自爆小怪立刻換<strong>散彈槍</strong>掃光，既防自爆又能滿地撿子彈與血包！'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'ch5',
+          num: '5',
+          shortTitle: '11號矩陣',
+          fullTitle: '5. 11號矩陣（Matrix 11）— 地下鐵道與迅馳模式覺醒',
+          isRedLight: false,
+          banner: '線性大型箱庭神關！不僅順路核心極多，過關更直接解鎖逆轉神技<strong>【迅馳模式（L3+R3 無敵爆發）】</strong>！',
+          camps: [
+            {
+              id: 'ch5_stalker_yard',
+              name: '封閉車站 ➔ 崩塌鐵道橋 ➔ 列車墓地 ➔ 軌道調度場',
+              tag: '中繼頭目',
+              tagType: 'supply',
+              note: '地下鐵車廂與側邊維修室藏有多顆機體／貝塔核心與【貝塔恍惚型外脊裝】，記得開掃描（觸控板／方向鍵）巡視發光點。',
+              items: [
+                {
+                  id: 'ch5_exo_betatrance',
+                  type: 'gear',
+                  badge: '神級裝備',
+                  title: '列車墓地／下水道順路箱：【貝塔恍惚型外脊裝】＋ 機體／貝塔核心',
+                  detail: '有機率不消耗貝塔能量免費連放 L1+○／L1+□，配搭保護型外脊裝堪稱全期最穩組合！'
+                },
+                {
+                  id: 'ch5_boss_stalker',
+                  type: 'boss',
+                  badge: '中繼頭目',
+                  title: '軌道調度場：【潛行獸（Stalker）】拆招重點',
+                  detail: '電鋸頭高速獸。開場遠距丟巨石直接側跑閃過；看到牠壓低身體閃<span class="key-blue">藍光突進準備 ↑+○ 閃現</span>；紅光雙臂狂揮若節奏難抓，直接按 <strong>L1+○ 衝擊波</strong>強制打斷牠！'
+                }
+              ]
+            },
+            {
+              id: 'ch5_hideout_juggernaut',
+              name: '腐敗迷宮（臨時藏身處）➔ 淨水廠補給營地',
+              tag: '關底決戰',
+              tagType: 'supply',
+              note: '通過潛行獸後抵達舊人類臨時藏身處，此處文件對<strong>百合進度條</strong>加分極高，務必順手撿齊桌上與祭壇記憶棒！',
+              items: [
+                {
+                  id: 'ch5_lily_shrine',
+                  type: 'quest',
+                  badge: '百合進度',
+                  title: '臨時藏身處（地下避難所）：搜刮祭壇與樓層記憶棒／祈禱文',
+                  detail: '順路一圈僅需 2 分鐘，可大幅推進百合進度條，離 100% 隱藏關卡更進一步。'
+                },
+                {
+                  id: 'ch5_boss_juggernaut',
+                  type: 'boss',
+                  badge: '關底頭目',
+                  title: '淨水廠：【主宰獸（Juggernaut）】拆招 ＆ 解鎖【迅馳模式】',
+                  detail: '巨鎚重裝王。鐵鎚揮擊慢但帶延遲快慢刀，紅光大風車旋轉三連砸建議直接拉開距離；全身著火後高跳<span class="key-purple">紫光下劈必按 ↓+○ 擊退</span>反制！戰勝後正式覺醒 <strong>L3+R3 迅馳模式</strong>！'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'ch6',
+          num: '6',
+          shortTitle: '大沙漠',
+          fullTitle: '6. 大沙漠（Great Desert）— 綠洲樞紐、日光塔與反射外脊裝',
+          isRedLight: false,
+          banner: '第二張開放地圖！<strong>抵達流沙綠洲後，第一件事往西直奔【大沙漠日光塔】擊敗守塔潛行獸開電</strong>，切勿在沒電時盲目亂逛！',
+          camps: [
+            {
+              id: 'ch6_oasis_solar',
+              name: '流沙綠洲 ➔ 大沙漠日光塔（第一優先必開！）',
+              tag: '必開電力',
+              tagType: 'warn',
+              note: '先開綠洲營地（順手跟克萊德拿釣竿），接著直接往西前往日光塔區清場開塔，解鎖全沙漠營地電力。',
+              items: [
+                {
+                  id: 'ch6_boss_desert_stalker',
+                  type: 'boss',
+                  badge: '守塔頭目',
+                  title: '大沙漠日光塔下：【潛行獸（沙漠強化型）】＆ 重啟日光塔',
+                  detail: '打法同 11號矩陣潛行獸，現在你有 <strong>L3+R3 迅馳模式</strong>，半血後直接開無敵狂砍破盾秒殺，上塔開電！'
+                },
+                {
+                  id: 'ch6_exo_reflex',
+                  type: 'gear',
+                  badge: '手殘救星',
+                  title: '掩埋的廢墟金色箱：必拿【反射型外脊裝】＆【爆發恍惚型外脊裝】',
+                  detail: '掩埋廢墟右側坍塌大樓頂層與歌劇院周邊金色補給箱必拿<strong>【反射型外脊裝】</strong>（直接放大完美招架與完美閃避判定時間，終局人形王救星）！提防沙地潛伏沙蟲，走在岩石或屋頂最安全。'
+                }
+              ]
+            },
+            {
+              id: 'ch6_desert_bosses',
+              name: '掩埋廢墟屋頂 ➔ 廢棄高架橋 ➔ 雙子岩競技場（必打頭目支線）',
+              tag: '頭目支線',
+              tagType: 'supply',
+              note: '沙漠兩大野外強敵頭目，務必在「紅燈2」最終戰前清完以拿齊頂級武器核心與獎盃。',
+              items: [
+                {
+                  id: 'ch6_boss_abaddon2',
+                  type: 'boss',
+                  badge: '野外頭目',
+                  title: '掩埋廢墟大樓屋頂：強化版【亞巴頓（雷暴二戰）】',
+                  detail: '爬上廢墟東側高樓頂觸發。雷電刀氣變為交叉多波次，貼身用 L1+○ 與 R1+○ 輪流倒地壓制即可輕鬆取勝。'
+                },
+                {
+                  id: 'ch6_boss_behemoth',
+                  type: 'boss',
+                  badge: '支線強敵',
+                  title: '支線《偶遇》（卡雅委託）：獅頭巨獸【巨擘獸（Behemoth）】',
+                  detail: '體型與傷害極高的狂暴巨獸！紅光連拍地板震波範圍大，建議留滿<strong>爆發能量（R1+○）</strong>與<strong>迅馳模式（L3+R3）</strong>在牠半血狂暴時一口氣破盾處決。'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'ch7',
+          num: '7',
+          shortTitle: '盧瓦底層',
+          fullTitle: '7. 盧瓦底層（Abyss Levoire）— 深淵射擊地城與紅燈前夕',
+          isRedLight: false,
+          banner: '⚠️ <strong>本關同樣全程禁用刀劍、僅限無人機射擊！</strong>而且通關踏出大門後<strong>立刻面臨「🔴 紅燈1」不可逆死線</strong>，關內實驗紀錄務必順手撿增加百合進度！',
+          camps: [
+            {
+              id: 'ch7_abyss_run',
+              name: '盧瓦底層入口 ➔ 膠囊艙群室 ➔ 監控室 ➔ 心臟地帶營地',
+              tag: '純射擊關',
+              tagType: 'warn',
+              note: '底層敵人數量比高層更多，善用追蹤飛彈清高處砲塔怪、散彈槍轟退貼臉突變體；雷射圓盤走廊抓準空檔衝刺跳過。',
+              items: [
+                {
+                  id: 'ch7_lily_logs',
+                  type: 'quest',
+                  badge: '百合進度',
+                  title: '監控室與手術室：撿齊【盧瓦底層實驗日誌】衝刺百合 100%',
+                  detail: '沿途發光終端機與屍體紀錄直接揭露舊人類計畫，若百合進度條還差一點，這裡撿完通常直接跳滿 100%！'
+                },
+                {
+                  id: 'ch7_boss_abyss_core',
+                  type: 'boss',
+                  badge: '關底頭目',
+                  title: '深淵心臟：【漩渦獸變異體】拆招重點',
+                  detail: '場地多了地面旋轉雷射束，記得邊跳過雷射邊用高爆散彈／雷射光束轟擊橘色核心囊腫；彈藥見底時優先射殺爬行小怪補彈。'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'red1',
+          num: '🔴1',
+          shortTitle: '紅燈1：軌道電梯前',
+          fullTitle: '🔴 紅燈 1 重大死線：找亞當前往軌道電梯（4號高塔）之前！',
+          isRedLight: true,
+          banner: '🚨 <strong>全遊戲最重要不可逆分水嶺！</strong>盧瓦底層通關回到曦安停機坪後，<strong>與亞當對話選擇「出發前往4號高塔」前請立即停手檢核以下 3 點</strong>！一旦出發，曦安所有未解支線永久失敗！',
+          camps: [
+            {
+              id: 'red1_checklist',
+              name: '🔴 紅燈 1 起飛前強制安全檢核單',
+              tag: '不可逆死線',
+              tagType: 'warn',
+              note: '完成以下三項檢核並打開頂端「🌸 百合進度條 100% 檢核」開關後，再安心找亞當出發！',
+              items: [
+                {
+                  id: 'red1_check_xion_quests',
+                  type: 'quest',
+                  badge: '死線必清',
+                  title: '1. 清完所有【曦安城內市民委託支線】（出發後曦安遭襲封閉！）',
+                  detail: '確認卡雅（姊妹廢品場）、恩雅＆蘇、巴里、法蘭西斯書店等城內 NPC 頭上已無重要支線，未領取的任務報酬全部領完。'
+                },
+                {
+                  id: 'red1_check_lily_100',
+                  type: 'route',
+                  badge: '真結局關鍵',
+                  title: '2. 確認右上角【百合進度條已滿 100%】（解鎖第8章隱藏關艾多城9號！）',
+                  detail: '隨便撿一個記憶棒或文件時，觀察畫面右上角百合頭像旁是否顯示 <strong>100%（白色滿格圖示）</strong>。滿 100% 出發時百合才會主動要求先繞道前往<strong>【艾多城9號】</strong>！若未滿，去廢土／大沙漠補撿幾個營地旁屍體記憶棒即可補滿。'
+                },
+                {
+                  id: 'red1_check_shops',
+                  type: 'gear',
+                  badge: '補給採購',
+                  title: '3. 買齊曦安各商店【奈米衣設計圖、核心素材與 WB 復活泵浦】',
+                  detail: '把羅克珊、萊爾雜貨店、卡雅店內需要的設計圖與升級晶片買齊，帶滿 WB 泵浦準備迎接隱藏關雙王與軌道電梯連戰！'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'ch8',
+          num: '8',
+          shortTitle: '艾多城9號（隱藏雙王）',
+          fullTitle: '8. 艾多城9號（Eidos 9）— 隱藏關卡與摩天輪雙頭目決戰',
+          isRedLight: false,
+          banner: '🌸 <strong>百合進度 100% 專屬隱藏關卡！</strong>目標是清除沉沒都市腐敗繭群、擊破<strong>同場雙頭目</strong>，並進入百合秘密花園取得真結局關鍵晶片！',
+          camps: [
+            {
+              id: 'ch8_eidos9_route',
+              name: '沉沒都市入口 ➔ 水上雲霄飛車滑軌 ➔ 摩天輪廣場 ➔ 百合花園',
+              tag: '隱藏關卡',
+              tagType: 'supply',
+              note: '在滑軌滑行時用無人機射爆阻路圓球與自爆怪；水底與斷橋建築記得撿高階機體／貝塔核心與隱藏奈米衣（注意水中觸手怪別下深水）。',
+              items: [
+                {
+                  id: 'ch8_cocoons',
+                  type: 'route',
+                  badge: '開門條件',
+                  title: '破壞沉沒大樓區全部【腐敗繭寄生核心】開啟摩天輪廣場通路',
+                  detail: '跟著紅色藤蔓脈絡走即可輕鬆找齊所有腐敗繭，沿途有大量強化敵人可存滿貝塔與爆發能量進王房！'
+                },
+                {
+                  id: 'ch8_boss_dual',
+                  type: 'boss',
+                  badge: '隱藏雙頭目',
+                  title: '摩天輪廣場同場雙王：【腐敗者 ＋ 主宰獸】速殺拆招重點',
+                  detail: '⚡ <strong>一對二逃課鐵則：絕對不要同時跟兩隻纏鬥！</strong>開場立刻鎖定血量較薄、會在遠處狂噴酸液干擾的<strong>【腐敗者】</strong>，直接按下 <strong>L3+R3 迅馳模式</strong> ＋ <strong>R1+○ 爆發技能</strong> 火力全開在 25 秒內強殺腐敗者！變成單挑【主宰獸】後，抓<span class="key-purple">紫光 ↓+○ 擊退</span>即可穩穩收頭！'
+                },
+                {
+                  id: 'ch8_lily_memory',
+                  type: 'quest',
+                  badge: '真結局鑰匙',
+                  title: '百合秘密工坊花園：取得關鍵記憶道具【伊伯利斯之刃】',
+                  detail: '雙王戰後走進溫室花園觸發劇情取得百合珍藏晶片，至此<strong>完美真結局《造就新的記憶》前置條件 100% 達成</strong>！'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'ch9',
+          num: '9',
+          shortTitle: '4號高塔',
+          fullTitle: '9. 4號高塔（Spire 4）— 軌道電梯突破與三大頭目連戰',
+          isRedLight: false,
+          banner: '高張力科幻大片關卡！本關為單向長征（通關後才會回地面），內含<strong>三場大型頭目戰</strong>，每個補給營地務必把 WB 泵浦與血水買滿！',
+          camps: [
+            {
+              id: 'ch9_belial_space',
+              name: '軌道電梯底層 ➔ 貨運電梯井 ➔ 拉斐爾太空中心',
+              tag: '頭目連戰',
+              tagType: 'supply',
+              note: '電梯上升途中需清理數波機械兵與孽奇拔，輸送帶雷射區可開慢走看準空隙穿過。',
+              items: [
+                {
+                  id: 'ch9_boss_belial',
+                  type: 'boss',
+                  badge: '頭目 1',
+                  title: '太空中心兩度死鬥：雙刀狂戰【貝利亞爾（Belial）】拆招重點',
+                  detail: '雙刀攻速極快且二戰會<strong>自我修復回血三次</strong>！紅光瘋狗連斬千萬別硬拚貪刀，拉開等最後一刀<span class="key-purple">紫光跳劈按 ↓+○ 擊退</span>，或直接用 <strong>L1+○ 衝擊波</strong>遠距斷招；把 <strong>L3+R3 迅馳模式</strong>留到牠第三次修復後的最後一管血一波帶走！'
+                }
+              ]
+            },
+            {
+              id: 'ch9_lounge_orbit',
+              name: '貴賓休息室營地 ➔ 維護通道 ➔ 太空站軌道層',
+              tag: '關底高潮',
+              tagType: 'supply',
+              note: '貴賓休息室與乘客區藏有最後幾顆機體／貝塔核心與華麗禮服奈米衣，進王房前換上【反射型＋保護型外脊裝】！',
+              items: [
+                {
+                  id: 'ch9_boss_karakuri',
+                  type: 'boss',
+                  badge: '頭目 2',
+                  title: '貴賓室：【卡拉庫里（Karakuri 機關人偶王）】拆招重點',
+                  detail: '擅長分身幻影與全場雷射網。看到牠蓄力閃<span class="key-blue">藍光突刺抓準 ↑+○ 閃現</span>；升空連射光彈時按住衝刺橫向繞圈即可全躲；召喚跳舞分身時用 R1+○ 大範圍AOE一次掃光。'
+                },
+                {
+                  id: 'ch9_boss_demogorgon',
+                  type: 'boss',
+                  badge: '關底頭目 3',
+                  title: '軌道外層砲台戰：【魔獸德莫（Demogorgon）】拆招重點',
+                  detail: '巨型外太空觸手魔眼戰。利用無人機／軌道武裝集中射擊<strong>發光橘色觸手節點與中央巨眼</strong>，看到全螢幕蓄力光束時立刻躲進掩體或抓準時機閃避完成華麗處決！'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'red2',
+          num: '🔴2',
+          shortTitle: '紅燈2：最終戰前',
+          fullTitle: '🔴 紅燈 2 最終死線：前往「巢穴（最終決戰）」之前！',
+          isRedLight: true,
+          banner: '🚨 <strong>踏入巢穴前的最後自由探索機會！</strong>從4號高塔返回並擊退燃燒曦安入口強敵後，<strong>前往廢土南部「巢穴」前務必清完廢土與大沙漠所有頭目</strong>！',
+          camps: [
+            {
+              id: 'red2_checklist',
+              name: '🔴 紅燈 2 最終決戰前總清點',
+              tag: '最終死線',
+              tagType: 'warn',
+              note: '確認以下清單全數打勾後，即可帶著最強滿配狀態迎戰《劍星》最震撼的終局連戰！',
+              items: [
+                {
+                  id: 'red2_check_field_bosses',
+                  type: 'boss',
+                  badge: '全王制霸',
+                  title: '1. 清完【廢土】與【大沙漠】所有野外與支線頭目',
+                  detail: '確認廢土（荒原巨獸、強化腐敗者、二戰金剛獸）與大沙漠（日光塔潛行獸、屋頂亞巴頓、巨擘獸）已全數擊破，拿滿武器強化核心！'
+                },
+                {
+                  id: 'red2_check_max_gear',
+                  type: 'gear',
+                  badge: '滿配整備',
+                  title: '2. 外脊裝升滿 Mk3 ＋ 買滿【WB 復活泵浦 ×2】、衝擊手榴彈與全彈藥',
+                  detail: '推薦終局最穩外脊裝組合：<strong>【保護型外脊裝 ＋ 反射型外脊裝】</strong>（兼顧高減傷與超大招架閃避容錯），背包備齊衝擊手榴彈（可強制震倒人形最終王）！'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'ch10',
+          num: '10',
+          shortTitle: '巢穴最終戰',
+          fullTitle: '10. 燃燒曦安 ＆ 巢穴（Nest）— 渡鴉死鬥與雙結局最終戰',
+          isRedLight: false,
+          banner: '⚔️ <strong>全作最高潮巔峰對決！</strong>建議切換背鍵為<strong>「① 移動喝水流」或「② 雙中指打鐵流」</strong>，善用衝擊手榴彈、R1+○ 無敵幀與 L3+R3 迅馳模式！',
+          camps: [
+            {
+              id: 'ch10_raven_gate',
+              name: '燃燒曦安入口補給營地 — 宿敵死鬥連戰',
+              tag: '巔峰刀客',
+              tagType: 'supply',
+              note: '返回曦安謁見堂途中將連續迎戰無名孽奇拔與其真面目，兩戰之間有補給營地可補滿血水與復活泵。',
+              items: [
+                {
+                  id: 'ch10_boss_raven',
+                  type: 'boss',
+                  badge: '宿敵頭目',
+                  title: '謁見堂前：【無名孽奇拔 ➔ 渡鴉（Raven）】拆招重點',
+                  detail: '全作最帥也最快的人形劍士！瞬移拔刀斬節奏極快，裝備【反射型外脊裝】連按 L1 打鐵或拉距離引誘她出<span class="key-blue">藍光突刺按 ↑+○ 閃現</span>、<span class="key-purple">紫光迴旋踢按 ↓+○ 擊退</span>；二階段她浮空大笑施放<strong>全場紫光次元斬大招</strong>時，立刻按 <strong>R1+○ 爆發技能利用長無敵幀硬吃</strong>並反打倒地！'
+                }
+              ]
+            },
+            {
+              id: 'ch10_nest_finale',
+              name: '巢穴深處最後補給營地 — 亞當抉擇與最終頭目',
+              tag: '最終決戰',
+              tagType: 'warn',
+              note: '最後補給營地存檔後進入巢穴核心。若已達成「百合 100% ＋ 艾多城9號晶片」，選擇<strong>【牽起亞當的手】</strong>即進入完美真結局《造就新的記憶》（而且破關讀檔可繼續選另一選項看第二結局）！',
+              items: [
+                {
+                  id: 'ch10_boss_providence',
+                  type: 'boss',
+                  badge: '真結局最終王',
+                  title: '路線 A（牽起亞當的手）：重裝機甲【天意（Providence）】拆招重點',
+                  detail: '拳砲重擊單發極痛！省力逃課打法：輪流使用 <strong>L1+○ 衝擊波</strong>、<strong>R1+○ 懲戒</strong> 與 <strong>衝擊手榴彈</strong> 可讓機甲長時間倒地不起；半血後進入紅光六翼充能即死倒數時，<strong>立刻開啟 L3+R3 迅馳模式狂按 L1+△ 鑽頭破盾</strong>即可強行中斷秒殺技，迎接完美真結局！'
+                },
+                {
+                  id: 'ch10_boss_elder',
+                  type: 'boss',
+                  badge: '分支最終王',
+                  title: '路線 B（拒絕亞當的手）：【長老孽奇拔（Elder Naytiba）】拆招重點',
+                  detail: '神聖羽翼劍士。劍氣與瞬移節奏比渡鴉慢半拍好招架；最關鍵機制：當他飛上高空展開<strong>金色光環並召喚 6 顆發光天使球（全滅即死技）</strong>時，<strong>立刻按住 L2 舉起無人機射爆全部 6 顆光球</strong>，他就會直接墜地大硬直任你處決！'
+                }
+              ]
+            }
+          ]
+        }
+      ];
+
+      // =====================================================================
+      // Application State Initialization & Storage Helpers
+      // =====================================================================
+      var state = {
+        chapter: 'ch1',
+        camp: 'ch1_construction',
+        checked: {},
+        lily100: false,
+        preset: 'heal',
+        expanded: {}
+      };
+
+      function safeParseJSON(raw, fallback) {
+        if (!raw) return fallback;
+        try {
+          var parsed = JSON.parse(raw);
+          return parsed && typeof parsed === 'object' ? parsed : fallback;
+        } catch (e) {
+          return fallback;
+        }
+      }
+
+      function loadState() {
+        try {
+          var savedChap = localStorage.getItem(STORAGE_KEYS.chapter);
+          if (savedChap && getChapterById(savedChap)) {
+            state.chapter = savedChap;
+          } else {
+            localStorage.setItem(STORAGE_KEYS.chapter, state.chapter);
+          }
+
+          var savedCamp = localStorage.getItem(STORAGE_KEYS.camp);
+          if (savedCamp && findCampInfo(savedCamp)) {
+            state.camp = savedCamp;
+          } else {
+            localStorage.setItem(STORAGE_KEYS.camp, state.camp);
+          }
+
+          var rawChecked = localStorage.getItem(STORAGE_KEYS.checked);
+          if (rawChecked === null) {
+            state.checked = Object.assign({}, DEFAULT_CHECKED);
+            localStorage.setItem(STORAGE_KEYS.checked, JSON.stringify(state.checked));
+          } else {
+            state.checked = safeParseJSON(rawChecked, Object.assign({}, DEFAULT_CHECKED));
+          }
+
+          var rawLily = localStorage.getItem(STORAGE_KEYS.lily100);
+          if (rawLily === null) {
+            state.lily100 = false;
+            localStorage.setItem(STORAGE_KEYS.lily100, 'false');
+          } else {
+            state.lily100 = (rawLily === 'true');
+          }
+
+          var savedPreset = localStorage.getItem(STORAGE_KEYS.preset);
+          if (savedPreset && PRESETS[savedPreset]) {
+            state.preset = savedPreset;
+          } else {
+            localStorage.setItem(STORAGE_KEYS.preset, state.preset);
+          }
+
+          var rawExpanded = localStorage.getItem(STORAGE_KEYS.expanded);
+          if (rawExpanded === null) {
+            state.expanded = Object.assign({}, DEFAULT_EXPANDED);
+            localStorage.setItem(STORAGE_KEYS.expanded, JSON.stringify(state.expanded));
+          } else {
+            state.expanded = safeParseJSON(rawExpanded, Object.assign({}, DEFAULT_EXPANDED));
+          }
+        } catch (err) {
+          state.checked = Object.assign({}, DEFAULT_CHECKED);
+          state.expanded = Object.assign({}, DEFAULT_EXPANDED);
+        }
+      }
+
+      function saveKey(name, val) {
+        try {
+          localStorage.setItem(STORAGE_KEYS[name], typeof val === 'string' ? val : JSON.stringify(val));
+        } catch (e) {
+          showToast('⚠ 儲存空間受限，請匯出 JSON 備份');
+        }
+      }
+
+      function getChapterById(chapId) {
+        for (var i = 0; i < CHAPTERS.length; i++) {
+          if (CHAPTERS[i].id === chapId) return CHAPTERS[i];
+        }
+        return null;
+      }
+
+      function findCampInfo(campId) {
+        for (var i = 0; i < CHAPTERS.length; i++) {
+          var ch = CHAPTERS[i];
+          for (var j = 0; j < ch.camps.length; j++) {
+            if (ch.camps[j].id === campId) {
+              return { chapter: ch, camp: ch.camps[j] };
+            }
+          }
+        }
+        return null;
+      }
+
+      function countCheckTotals() {
+        var total = 0;
+        var done = 0;
+        for (var i = 0; i < CHAPTERS.length; i++) {
+          var camps = CHAPTERS[i].camps;
+          for (var j = 0; j < camps.length; j++) {
+            var items = camps[j].items;
+            for (var k = 0; k < items.length; k++) {
+              total++;
+              if (state.checked[items[k].id]) done++;
+            }
+          }
+        }
+        return { done: done, total: total };
+      }
+
+      // =====================================================================
+      // UI Rendering Functions
+      // =====================================================================
+      var toastTimer = null;
+      function showToast(msg) {
+        var el = document.getElementById('hudToast');
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () {
+          el.classList.remove('show');
+        }, 2300);
+      }
+
+      function renderTopStatus() {
+        // Anchor label
+        var anchorInfo = findCampInfo(state.camp);
+        var anchorLabel = document.getElementById('anchorLabelText');
+        if (anchorInfo && anchorLabel) {
+          anchorLabel.textContent = anchorInfo.camp.name.split('（')[0];
+        }
+
+        // Progress counter
+        var stats = countCheckTotals();
+        var statEl = document.getElementById('overallProgress');
+        if (statEl) {
+          statEl.textContent = '戰術進度 ' + stats.done + ' / ' + stats.total;
+        }
+
+        // Lily 100% Toggle
+        var lilyBtn = document.getElementById('lilyToggleBtn');
+        var lilyTxt = document.getElementById('lilyStatusIcon');
+        if (lilyBtn && lilyTxt) {
+          lilyBtn.setAttribute('aria-checked', state.lily100 ? 'true' : 'false');
+          if (state.lily100) {
+            lilyBtn.classList.add('is-ready');
+            lilyBtn.classList.remove('is-warn');
+            lilyTxt.textContent = '🌸 百合進度條 100%：已滿（隱藏關解鎖）';
+          } else {
+            lilyBtn.classList.remove('is-ready');
+            lilyBtn.classList.add('is-warn');
+            lilyTxt.textContent = '🌸 百合進度條 100% 檢核：未滿';
+          }
+        }
+      }
+
+      function renderChapterAxis() {
+        var axis = document.getElementById('chapterAxis');
+        if (!axis) return;
+        axis.innerHTML = '';
+
+        var anchorInfo = findCampInfo(state.camp);
+        var anchoredChapId = anchorInfo ? anchorInfo.chapter.id : '';
+
+        for (var i = 0; i < CHAPTERS.length; i++) {
+          var ch = CHAPTERS[i];
+
+          if (i > 0) {
+            var sep = document.createElement('span');
+            // Pair Ch.8 Eidos 9 & Ch.9 Spire 4 with ／ as specified in HUD axis
+            if (ch.id === 'ch9') {
+              sep.className = 'axis-pair-slash';
+              sep.textContent = '／';
+            } else {
+              sep.className = 'axis-arrow';
+              sep.textContent = '➔';
+            }
+            axis.appendChild(sep);
+          }
+
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'axis-node';
+          if (ch.isRedLight) btn.classList.add('red-light');
+          if (ch.id === state.chapter) btn.classList.add('active');
+          if (ch.id === anchoredChapId) btn.classList.add('has-anchor');
+
+          if (ch.isRedLight) {
+            var dot = document.createElement('span');
+            dot.className = 'pulse-red';
+            btn.appendChild(dot);
+            var rlText = document.createElement('span');
+            rlText.textContent = ch.shortTitle;
+            btn.appendChild(rlText);
+          } else {
+            var numSpan = document.createElement('span');
+            numSpan.className = 'chap-num';
+            numSpan.textContent = ch.num;
+            btn.appendChild(numSpan);
+
+            var titleSpan = document.createElement('span');
+            titleSpan.textContent = ch.shortTitle;
+            btn.appendChild(titleSpan);
+          }
+
+          (function (targetId) {
+            btn.addEventListener('click', function () {
+              state.chapter = targetId;
+              saveKey('chapter', targetId);
+              renderChapterAxis();
+              renderLeftColumn(false);
+            });
+          })(ch.id);
+
+          axis.appendChild(btn);
+        }
+      }
+
+      function renderLeftColumn(scrollToAnchor) {
+        var ch = getChapterById(state.chapter) || CHAPTERS[0];
+        var titleEl = document.getElementById('leftPanelTitle');
+        if (titleEl) titleEl.textContent = ch.fullTitle;
+
+        var container = document.getElementById('leftScroll');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // Chapter Top Banner
+        var banner = document.createElement('div');
+        banner.className = 'chapter-banner' + (ch.isRedLight ? ' is-red' : '');
+
+        var bTitle = document.createElement('div');
+        bTitle.className = 'chapter-banner-title';
+        bTitle.innerHTML = '<span>' + (ch.isRedLight ? '🚨 紅燈死線攔截檢核' : '📡 章節戰術摘要') + '</span>';
+
+        if (ch.id === 'red1' || ch.id === 'ch8') {
+          var lilyBadge = document.createElement('span');
+          lilyBadge.style.fontSize = '12px';
+          lilyBadge.style.color = state.lily100 ? '#34d399' : '#fbbf24';
+          lilyBadge.textContent = state.lily100 ? '✓ 百合100%已就緒' : '⚠ 尚未勾選百合100%';
+          bTitle.appendChild(lilyBadge);
+        }
+
+        var bDesc = document.createElement('div');
+        bDesc.className = 'chapter-banner-desc';
+        bDesc.innerHTML = ch.banner;
+
+        banner.appendChild(bTitle);
+        banner.appendChild(bDesc);
+        container.appendChild(banner);
+
+        // Render Camps
+        for (var i = 0; i < ch.camps.length; i++) {
+          var camp = ch.camps[i];
+          var isAnchored = (state.camp === camp.id);
+          // Default expand if anchored, red light, single-camp chapter, or explicitly expanded
+          var isExpanded = Boolean(
+            state.expanded[camp.id] ||
+            isAnchored ||
+            ch.isRedLight ||
+            ch.camps.length === 1
+          );
+
+          var card = document.createElement('div');
+          card.className = 'camp-card' + (isAnchored ? ' is-anchored' : '') + (isExpanded ? ' expanded' : '');
+          card.id = 'camp-dom-' + camp.id;
+
+          var header = document.createElement('div');
+          header.className = 'camp-header';
+
+          var hLeft = document.createElement('div');
+          hLeft.className = 'camp-header-left';
+
+          var chev = document.createElement('span');
+          chev.className = 'camp-chevron';
+          chev.textContent = '▶';
+          hLeft.appendChild(chev);
+
+          var cName = document.createElement('span');
+          cName.className = 'camp-name';
+          cName.textContent = camp.name;
+          hLeft.appendChild(cName);
+
+          if (camp.tag) {
+            var cTag = document.createElement('span');
+            cTag.className = 'camp-tag' + (camp.tagType ? ' ' + camp.tagType : '');
+            cTag.textContent = camp.tag;
+            hLeft.appendChild(cTag);
+          }
+
+          header.appendChild(hLeft);
+
+          var anchorBtn = document.createElement('button');
+          anchorBtn.type = 'button';
+          anchorBtn.className = 'anchor-btn' + (isAnchored ? ' active' : '');
+          anchorBtn.textContent = isAnchored ? '📍 目前營地錨點' : '設為營地錨點';
+
+          (function (campObj, cardEl) {
+            anchorBtn.addEventListener('click', function (ev) {
+              ev.stopPropagation();
+              state.camp = campObj.id;
+              state.expanded[campObj.id] = true;
+              saveKey('camp', state.camp);
+              saveKey('expanded', state.expanded);
+              renderTopStatus();
+              renderChapterAxis();
+              renderLeftColumn(false);
+              showToast('📍 已將營地錨點設為：' + campObj.name.split('（')[0]);
+            });
+
+            header.addEventListener('click', function () {
+              var currentlyOpen = cardEl.classList.contains('expanded');
+              if (currentlyOpen) {
+                cardEl.classList.remove('expanded');
+                delete state.expanded[campObj.id];
+              } else {
+                cardEl.classList.add('expanded');
+                state.expanded[campObj.id] = true;
+              }
+              saveKey('expanded', state.expanded);
+            });
+          })(camp, card);
+
+          header.appendChild(anchorBtn);
+          card.appendChild(header);
+
+          // Body
+          var body = document.createElement('div');
+          body.className = 'camp-body';
+
+          if (camp.note) {
+            var noteDiv = document.createElement('div');
+            noteDiv.className = 'route-note';
+            noteDiv.innerHTML = camp.note;
+            body.appendChild(noteDiv);
+          }
+
+          var listDiv = document.createElement('div');
+          listDiv.className = 'check-list';
+
+          for (var k = 0; k < camp.items.length; k++) {
+            var item = camp.items[k];
+            var isDone = Boolean(state.checked[item.id]);
+
+            var row = document.createElement('div');
+            row.className = 'check-item' + (isDone ? ' checked' : '');
+            row.setAttribute('role', 'checkbox');
+            row.setAttribute('aria-checked', isDone ? 'true' : 'false');
+
+            var box = document.createElement('div');
+            box.className = 'check-box';
+            box.textContent = '✓';
+
+            var content = document.createElement('div');
+            content.className = 'check-content';
+
+            var titleRow = document.createElement('div');
+            titleRow.className = 'check-title-row';
+
+            var pill = document.createElement('span');
+            pill.className = 'type-pill ' + item.type;
+            pill.textContent = item.badge;
+            titleRow.appendChild(pill);
+
+            var iTitle = document.createElement('span');
+            iTitle.className = 'check-title';
+            iTitle.textContent = item.title;
+            titleRow.appendChild(iTitle);
+
+            var iDetail = document.createElement('div');
+            iDetail.className = 'check-detail';
+            iDetail.innerHTML = item.detail;
+
+            content.appendChild(titleRow);
+            content.appendChild(iDetail);
+
+            row.appendChild(box);
+            row.appendChild(content);
+
+            (function (itemObj, rowEl) {
+              rowEl.addEventListener('click', function () {
+                var nextVal = !state.checked[itemObj.id];
+                if (nextVal) {
+                  state.checked[itemObj.id] = true;
+                  rowEl.classList.add('checked');
+                  rowEl.setAttribute('aria-checked', 'true');
+                } else {
+                  delete state.checked[itemObj.id];
+                  rowEl.classList.remove('checked');
+                  rowEl.setAttribute('aria-checked', 'false');
+                }
+                saveKey('checked', state.checked);
+
+                // Sync Lily 100% switch if user checks red1_check_lily_100
+                if (itemObj.id === 'red1_check_lily_100' && nextVal && !state.lily100) {
+                  state.lily100 = true;
+                  saveKey('lily100', 'true');
+                }
+                renderTopStatus();
+              });
+            })(item, row);
+
+            listDiv.appendChild(row);
+          }
+
+          body.appendChild(listDiv);
+          card.appendChild(body);
+          container.appendChild(card);
+        }
+
+        if (scrollToAnchor) {
+          setTimeout(function () {
+            var targetDom = document.getElementById('camp-dom-' + state.camp);
+            if (targetDom) {
+              targetDom.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 60);
+        } else {
+          container.scrollTop = 0;
+        }
+      }
+
+      function renderPresetUI() {
+        var presetData = PRESETS[state.preset] || PRESETS.heal;
+
+        // Toggle active preset button
+        var btns = document.querySelectorAll('.preset-btn');
+        for (var i = 0; i < btns.length; i++) {
+          var pKey = btns[i].getAttribute('data-preset');
+          if (pKey === state.preset) {
+            btns[i].classList.add('active');
+          } else {
+            btns[i].classList.remove('active');
+          }
+        }
+
+        // Update SVG Left & Right Back Paddle labels
+        var leftPaddleTxt = document.getElementById('svgLeftPaddleLabel');
+        var rightPaddleTxt = document.getElementById('svgRightPaddleLabel');
+        if (leftPaddleTxt) leftPaddleTxt.textContent = presetData.leftLabel;
+        if (rightPaddleTxt) rightPaddleTxt.textContent = presetData.rightLabel;
+
+        // Reset SVG dynamic highlights (Up, L1, L3)
+        var btnUp = document.getElementById('svgBtnUp');
+        var txtUp = document.getElementById('svgTxtUp');
+        var btnL1 = document.getElementById('svgBtnL1');
+        var txtL1 = document.getElementById('svgTxtL1');
+        var btnL3 = document.getElementById('svgBtnL3');
+        var txtL3 = document.getElementById('svgTxtL3');
+
+        if (btnUp) { btnUp.setAttribute('fill', '#1e293b'); btnUp.setAttribute('stroke', '#475569'); btnUp.setAttribute('stroke-width', '1.5'); }
+        if (txtUp) { txtUp.setAttribute('fill', '#cbd5e1'); }
+        if (btnL1) { btnL1.setAttribute('fill', '#1f293d'); btnL1.setAttribute('stroke', '#475569'); btnL1.setAttribute('stroke-width', '1.5'); }
+        if (txtL1) { txtL1.setAttribute('fill', '#cbd5e1'); }
+        if (btnL3) { btnL3.setAttribute('fill', '#0f1520'); btnL3.setAttribute('stroke', '#38bdf8'); btnL3.setAttribute('stroke-width', '1.8'); }
+        if (txtL3) { txtL3.setAttribute('fill', '#e2e8f0'); }
+
+        if (presetData.highlight === 'up' && btnUp && txtUp) {
+          btnUp.setAttribute('fill', 'rgba(45, 212, 191, 0.28)');
+          btnUp.setAttribute('stroke', '#2dd4bf');
+          btnUp.setAttribute('stroke-width', '2.2');
+          txtUp.setAttribute('fill', '#2dd4bf');
+        } else if (presetData.highlight === 'l1' && btnL1 && txtL1) {
+          btnL1.setAttribute('fill', 'rgba(45, 212, 191, 0.28)');
+          btnL1.setAttribute('stroke', '#2dd4bf');
+          btnL1.setAttribute('stroke-width', '2.2');
+          txtL1.setAttribute('fill', '#2dd4bf');
+        } else if (presetData.highlight === 'l3' && btnL3 && txtL3) {
+          btnL3.setAttribute('fill', 'rgba(45, 212, 191, 0.28)');
+          btnL3.setAttribute('stroke', '#2dd4bf');
+          btnL3.setAttribute('stroke-width', '2.6');
+          txtL3.setAttribute('fill', '#2dd4bf');
+        }
+
+        // Update tactical description
+        var descBar = document.getElementById('presetDescBar');
+        if (descBar) {
+          descBar.innerHTML = presetData.desc;
+        }
+      }
+
+      // =====================================================================
+      // Event Bindings (Export / Import JSON, Lily Switch, Anchor Jump, Presets)
+      // =====================================================================
+      function bindEvents() {
+        // Anchor Jump Button
+        var jumpBtn = document.getElementById('anchorJumpBtn');
+        if (jumpBtn) {
+          jumpBtn.addEventListener('click', function () {
+            var info = findCampInfo(state.camp);
+            if (!info) return;
+            state.chapter = info.chapter.id;
+            state.expanded[state.camp] = true;
+            saveKey('chapter', state.chapter);
+            saveKey('expanded', state.expanded);
+            renderChapterAxis();
+            renderLeftColumn(true);
+            showToast('📍 已定位至錨點：' + info.camp.name.split('（')[0]);
+          });
+        }
+
+        // Lily 100% Switch
+        var lilyBtn = document.getElementById('lilyToggleBtn');
+        if (lilyBtn) {
+          lilyBtn.addEventListener('click', function () {
+            state.lily100 = !state.lily100;
+            saveKey('lily100', state.lily100 ? 'true' : 'false');
+            renderTopStatus();
+            renderLeftColumn(false);
+            showToast(state.lily100 ? '🌸 百合進度 100% 已確認！艾多城9號隱藏關解鎖就緒' : '🌸 已切換為「百合進度未滿 100%」提醒狀態');
+          });
+        }
+
+        // Preset Switcher Buttons
+        var presetBtns = document.querySelectorAll('.preset-btn');
+        for (var i = 0; i < presetBtns.length; i++) {
+          (function (btn) {
+            btn.addEventListener('click', function () {
+              var key = btn.getAttribute('data-preset');
+              if (!PRESETS[key]) return;
+              state.preset = key;
+              saveKey('preset', key);
+              renderPresetUI();
+              showToast('🎮 已切換背鍵流派：' + PRESETS[key].title);
+            });
+          })(presetBtns[i]);
+        }
+
+        // Export JSON Progress
+        var exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+          exportBtn.addEventListener('click', function () {
+            var payload = {
+              schema: 'sb_hud_v1_backup',
+              exportedAt: new Date().toISOString(),
+              sb_hud_v1_chapter: state.chapter,
+              sb_hud_v1_camp: state.camp,
+              sb_hud_v1_checked: state.checked,
+              sb_hud_v1_lily100: state.lily100,
+              sb_hud_v1_preset: state.preset,
+              sb_hud_v1_expanded: state.expanded
+            };
+            var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            var dateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            a.href = url;
+            a.download = 'stellar-blade-hud-' + dateTag + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('⬇ 已匯出戰術板進度 JSON 備份檔');
+          });
+        }
+
+        // Import JSON Progress
+        var importBtn = document.getElementById('importBtn');
+        var fileInput = document.getElementById('importFileInput');
+        if (importBtn && fileInput) {
+          importBtn.addEventListener('click', function () {
+            fileInput.value = '';
+            fileInput.click();
+          });
+
+          fileInput.addEventListener('change', function (ev) {
+            var file = ev.target.files && ev.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function (loadEv) {
+              try {
+                var data = JSON.parse(String(loadEv.target.result || ''));
+                if (!data || typeof data !== 'object' || (!('sb_hud_v1_checked' in data) && !('sb_hud_v1_chapter' in data))) {
+                  showToast('⚠ 匯入失敗：JSON 檔案格式不符');
+                  return;
+                }
+                if (typeof data.sb_hud_v1_chapter === 'string' && getChapterById(data.sb_hud_v1_chapter)) {
+                  state.chapter = data.sb_hud_v1_chapter;
+                  saveKey('chapter', state.chapter);
+                }
+                if (typeof data.sb_hud_v1_camp === 'string' && findCampInfo(data.sb_hud_v1_camp)) {
+                  state.camp = data.sb_hud_v1_camp;
+                  saveKey('camp', state.camp);
+                }
+                if (data.sb_hud_v1_checked && typeof data.sb_hud_v1_checked === 'object') {
+                  state.checked = data.sb_hud_v1_checked;
+                  saveKey('checked', state.checked);
+                }
+                if (typeof data.sb_hud_v1_lily100 === 'boolean' || typeof data.sb_hud_v1_lily100 === 'string') {
+                  state.lily100 = (data.sb_hud_v1_lily100 === true || data.sb_hud_v1_lily100 === 'true');
+                  saveKey('lily100', state.lily100 ? 'true' : 'false');
+                }
+                if (typeof data.sb_hud_v1_preset === 'string' && PRESETS[data.sb_hud_v1_preset]) {
+                  state.preset = data.sb_hud_v1_preset;
+                  saveKey('preset', state.preset);
+                }
+                if (data.sb_hud_v1_expanded && typeof data.sb_hud_v1_expanded === 'object') {
+                  state.expanded = data.sb_hud_v1_expanded;
+                  saveKey('expanded', state.expanded);
+                }
+
+                renderTopStatus();
+                renderChapterAxis();
+                renderLeftColumn(true);
+                renderPresetUI();
+                showToast('✓ 進度匯入還原成功！');
+              } catch (err) {
+                showToast('⚠ 匯入失敗：無法解析 JSON 檔案');
+              }
+            };
+            reader.readAsText(file, 'UTF-8');
+          });
+        }
+
+        // Fullscreen Toggle Button
+        var fsBtn = document.getElementById('fullscreenBtn');
+        if (fsBtn) {
+          fsBtn.addEventListener('click', function () {
+            var doc = document;
+            var docEl = document.documentElement;
+            var reqFs = docEl.requestFullscreen || docEl.webkitRequestFullscreen;
+            var exitFs = doc.exitFullscreen || doc.webkitExitFullscreen;
+            var isFs = doc.fullscreenElement || doc.webkitFullscreenElement;
+            if (!isFs && reqFs) {
+              reqFs.call(docEl).catch(function () {
+                showToast('💡 平板建議使用瀏覽器「加入主畫面」開啟完整全螢幕');
+              });
+            } else if (isFs && exitFs) {
+              exitFs.call(doc);
+            } else {
+              showToast('💡 iPad 請點分享鈕選「加入主畫面」即享 100% 全螢幕');
+            }
+          });
+        }
+      }
+
+      // Boot HUD
+      loadState();
+      renderTopStatus();
+      renderChapterAxis();
+      // On initial load, if on anchored chapter, scroll smoothly to anchored camp
+      var anchorInfoOnBoot = findCampInfo(state.camp);
+      var shouldScrollBoot = Boolean(anchorInfoOnBoot && anchorInfoOnBoot.chapter.id === state.chapter);
+      renderLeftColumn(shouldScrollBoot);
+      renderPresetUI();
+      bindEvents();
+    })();
+  </script>
+</body>
+</html>
