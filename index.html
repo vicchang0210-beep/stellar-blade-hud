@@ -8,7 +8,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="劍星戰術板" />
-  <title>《劍星》戰術板 v2.0｜Stellar Blade Tactical Split-View</title>
+  <title>《劍星》戰術板 v2.1｜Stellar Blade Tactical Split-View</title>
   <link rel="manifest" href="./manifest.json" />
   <style>
     :root {
@@ -1030,6 +1030,134 @@
       color: var(--text-primary);
     }
 
+    /* Combat View Dual Anchor Jump Pills */
+    .combat-anchor-bar {
+      position: sticky;
+      top: -10px;
+      z-index: 15;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0 6px;
+      margin: -6px 0 2px;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--ios-sep);
+      flex-wrap: wrap;
+    }
+
+    .combat-anchor-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 48px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid var(--ios-sep-strong);
+      background: var(--ios-card);
+      color: var(--text-primary);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .combat-anchor-pill:active {
+      background: var(--ios-secondary);
+    }
+
+    .combat-anchor-pill.active {
+      background: var(--ios-blue);
+      border-color: var(--ios-blue);
+      color: var(--text-white);
+    }
+
+    .combat-anchor-target {
+      scroll-margin-top: 68px;
+    }
+
+    /* Exospine & Gear Build Guide Group */
+    .build-guide-group {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-margin-top: 68px;
+    }
+
+    .build-group-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 13px 16px;
+      background: linear-gradient(135deg, rgba(255, 214, 10, 0.14), rgba(28, 28, 30, 0.96));
+      border: 1px solid rgba(255, 214, 10, 0.45);
+      border-radius: var(--radius-card);
+    }
+
+    .build-group-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--ios-amber);
+      line-height: 1.35;
+    }
+
+    .build-group-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      background: var(--ios-amber-dim);
+      color: #FFD60A;
+      border: 1px solid rgba(255, 214, 10, 0.45);
+      white-space: nowrap;
+    }
+
+    .build-tag-amber {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 800;
+      background: var(--ios-amber-dim);
+      color: #FFD60A;
+      border: 1px solid rgba(255, 214, 10, 0.42);
+      flex-shrink: 0;
+    }
+
+    .build-tag-red {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 800;
+      background: var(--ios-red-dim);
+      color: #FF453A;
+      border: 1px solid rgba(255, 69, 58, 0.48);
+      flex-shrink: 0;
+    }
+
+    .ios-row-title.wrap-title {
+      flex-wrap: wrap;
+    }
+
+    .ios-row-item.pitfall-row {
+      background: rgba(255, 69, 58, 0.08);
+      border-left: 4px solid #FF453A;
+    }
+
+    .ios-row-item.pitfall-row .ios-row-title {
+      color: #FF453A;
+    }
+
     /* DualSense Edge Presets & SVG Stage */
     .preset-grid {
       display: grid;
@@ -1395,7 +1523,7 @@
       </div>
 
       <!-- 4. Version Stamp -->
-      <div class="sidebar-version">v2.0 iPadOS Split-View</div>
+      <div class="sidebar-version">v2.1 iPadOS Split-View</div>
     </aside>
 
     <!-- Right Main Content Area (~77% Width in Landscape) -->
@@ -1446,9 +1574,14 @@
           <div id="campListContainer" style="display:flex;flex-direction:column;gap:10px;"></div>
         </section>
 
-        <!-- View 2: Flash Formula & High-CP Skills -->
+        <!-- View 2: Flash Formula & High-CP Skills + 4-Stage Exospine & Gear Build Guide -->
         <section id="viewCombat" class="subview-panel" aria-label="色光公式與必點技能">
-          <div class="ios-card-section">
+          <div id="combatAnchorBar" class="combat-anchor-bar" role="navigation" aria-label="戰鬥速查區段快速跳轉">
+            <button type="button" class="combat-anchor-pill active" data-combat-target="combatFlashSection">⚡ 色光與必點技能</button>
+            <button type="button" class="combat-anchor-pill" data-combat-target="combatBuildSection">🛡️ 外脊裝與機件畢業配裝</button>
+          </div>
+
+          <div id="combatFlashSection" class="ios-card-section combat-anchor-target">
             <div class="ios-card-header">⚡ 頭目四色閃光反應鐵則（看伊芙劍身發光瞬間輸入）</div>
             <div class="flash-grid">
               <div class="flash-box">
@@ -1483,6 +1616,113 @@
             <div class="ios-row-item">
               <div class="ios-row-title" style="color:#FFD60A;">③ 後期決戰（大沙漠 ～ 巢穴最終戰）</div>
               <div class="ios-row-desc">爆發技能主升 <strong>R1 + ○（懲戒：超長無敵幀硬吃大招＋強制倒地）</strong>，強化 <strong>L3 + R3 迅馳模式</strong> 破盾傷害；每個營地常備 <strong>2 顆 WB 泵浦（原地復活）</strong> 穩過雙王與最終戰！</div>
+            </div>
+          </div>
+
+          <!-- 4-Stage Exospine + Gear Graduation Build Guide -->
+          <div id="combatBuildSection" class="build-guide-group" aria-label="外脊裝與機件畢業配裝表">
+            <div class="build-group-banner">
+              <div class="build-group-title">🛡️ 外脊裝＋機件畢業配裝表（一周目故事模式省力版）</div>
+              <span class="build-group-tag">防白工 ＆ 四階段畢業路線</span>
+            </div>
+
+            <!-- Card A: 3 Iron Rules -->
+            <div class="ios-card-section amber-border">
+              <div class="ios-card-header amber">📌 底層防白工 3 大鐵則</div>
+              <div class="ios-row-item">
+                <div class="ios-row-title wrap-title">
+                  <span class="build-tag-amber">鐵則 ①</span>
+                  <span>改裝地點限制</span>
+                </div>
+                <div class="ios-row-desc">僅有機械手臂的<strong>「大型補給營地」維修台</strong>（或曦安停機坪）可升級外脊裝與擴充機件欄，一般小營地無此功能。</div>
+              </div>
+              <div class="ios-row-item">
+                <div class="ios-row-title wrap-title">
+                  <span class="build-tag-red">鐵則 ②</span>
+                  <span>外脊裝第 2 格解鎖時機</span>
+                </div>
+                <div class="ios-row-desc">第 1～7 章固定僅 1 格屬正常現象，不消耗道具也不在商店購買；完成第 7 章「盧瓦底層」返程主線（進入 <span class="key-red" style="color:#FF453A;">🔴 紅燈 1</span> 前往軌道電梯前夕）由百合隨劇情自動開啟第 2 格。</div>
+              </div>
+              <div class="ios-row-item">
+                <div class="ios-row-title wrap-title">
+                  <span class="build-tag-amber">鐵則 ③</span>
+                  <span>機件擴充與疊加</span>
+                </div>
+                <div class="ios-row-desc">於維修台「強化伊芙 ➔ 新增機件插槽」消耗<span class="key-amber">【萬能栓】</span>（依序 2/3/4 顆，共 9 顆）開滿 4 格；同名但「不同星級」的機件（如 <strong>★★★＋★★</strong>）可同時裝備疊加。</div>
+              </div>
+            </div>
+
+            <!-- Card B: 4-Stage Painless Progression Route -->
+            <div class="ios-card-section">
+              <div class="ios-card-header">🗺️ 四階段無痛換裝路線</div>
+              <div class="ios-row-item">
+                <div class="ios-row-title wrap-title">
+                  <span class="build-tag-amber">階段 ① 開荒期</span>
+                  <span>第 1～2 章：艾多城7號 ～ 曦安｜外脊裝 1 格</span>
+                </div>
+                <div class="ios-row-desc">穿<span class="key-amber">【保護型外脊裝】</span>（施工區右側電梯大樓 2 樓露台；常駐減傷 10%＋護盾強化，打金剛獸首選）或<strong>【連鎖型外脊裝】</strong>（寂靜街道；普攻連段增傷），過渡裝最多升 1 階以省下高階奈米元素。機件直接裝<strong>【貝塔充能機件 ★】</strong>（亞巴頓掉落）、<strong>【護盾破壞機件 ★】</strong>（腐敗者掉落）或<strong>【貝塔強化機件 ★】</strong>（施工區取得）。</div>
+              </div>
+              <div class="ios-row-item">
+                <div class="ios-row-title wrap-title">
+                  <span class="build-tag-amber">階段 ② 探索＆純槍期</span>
+                  <span>第 3～4 章：廢土 ➔ 盧瓦高層｜外脊裝 1 格</span>
+                </div>
+                <div class="ios-row-desc">進曦安先去「姊妹廢料場（凱雅商店）」買<span class="key-amber">【速度提升機件 ★】</span>（加攻速）與<strong>【訓練機件 ★】</strong>（加 SP 經驗）。廢土續穿【保護型】或換<strong>【衝擊型外脊裝】</strong>（廢土中央廢料平原；暴擊連鎖電擊清群怪）。<span class="key-red" style="color:#FF453A;">⚠️ 進入第 4 章「盧瓦高層」與第 7 章「盧瓦底層」（全程禁刀純槍械關卡）前</span>，必換<span class="key-amber">【鷹眼型外脊裝】</span>（廢土東南高台；強化槍傷與機率回彈）或【保護型】。</div>
+              </div>
+              <div class="ios-row-item">
+                <div class="ios-row-title wrap-title">
+                  <span class="build-tag-amber">階段 ③ 中期質變期</span>
+                  <span>第 5～7 章：11號矩陣 ➔ 大沙漠 ➔ 盧瓦底層｜外脊裝 1 格</span>
+                </div>
+                <div class="ios-row-desc">頭目戰首選<span class="key-amber">【貝塔出神型外脊裝】</span>（第 5 章 11號矩陣・地下水道；拿到直接升滿 3 階，放技能機率進「出神狀態」短時間免費狂放貝塔技能）。若用 Edge「雙中指打鐵流」可選<strong>【反應型外脊裝】</strong>（第 5 章 11號矩陣・列車墓地；放寬完美招架與閃避判定）。第 6 章大沙漠東側埋沒廢墟先撿<span class="key-amber">【抑制型外脊裝】</span>升滿備用。</div>
+              </div>
+              <div class="ios-row-item">
+                <div class="ios-row-title wrap-title">
+                  <span class="build-tag-red">階段 ④ 後期完全體</span>
+                  <span>🔴 紅燈 1 前夕解鎖第 2 格 ～ 破關｜外脊裝 2 格</span>
+                </div>
+                <div class="ios-row-desc">鎖死<span class="key-amber">【貝塔出神型外脊裝】＋【抑制型外脊裝】</span>（護盾穿透＋大幅延長頭目倒地時間＋倒地增傷，配合 <strong>L1+○</strong> 震地倒地壓制）；遇快攻高壓頭目，副欄可隨時切回<strong>【保護型】</strong>或<strong>【反應型】</strong>。</div>
+              </div>
+            </div>
+
+            <!-- Card C: 4-Slot Gear Priority & Pitfall List -->
+            <div class="ios-card-section">
+              <div class="ios-card-header">⚙️ 機件 4 格畢業優先榜 ＆ 避坑清單</div>
+              <div class="ios-row-item">
+                <div class="ios-row-title wrap-title">
+                  <span class="build-tag-amber">優先 ①</span>
+                  <span>【速度提升機件】</span>
+                </div>
+                <div class="ios-row-desc">加攻速 10%～15%，減少貪刀出招硬直，<strong>必常駐第一名</strong>。</div>
+              </div>
+              <div class="ios-row-item">
+                <div class="ios-row-title wrap-title">
+                  <span class="build-tag-amber">優先 ②</span>
+                  <span>【貝塔充能機件】</span>
+                </div>
+                <div class="ios-row-desc">加快藍條能量迴轉，讓 <strong>L1+○</strong> 衝擊波與破盾斬擊不斷鏈。</div>
+              </div>
+              <div class="ios-row-item">
+                <div class="ios-row-title wrap-title">
+                  <span class="build-tag-amber">優先 ③</span>
+                  <span>【貝塔強化機件】或【護盾破壞機件】</span>
+                </div>
+                <div class="ios-row-desc">強化主力輸出與破盾效率（平時跑圖可暫換<strong>【訓練機件】</strong>加速賺 SP，打王前換回）。</div>
+              </div>
+              <div class="ios-row-item">
+                <div class="ios-row-title wrap-title">
+                  <span class="build-tag-amber">優先 ④</span>
+                  <span>【保護機件】／【近戰保護機件】</span>
+                </div>
+                <div class="ios-row-desc">常駐減傷，完美搭配 Edge<strong>「移動喝水流」左背鍵 ↑ 補血、右背鍵 ○ 閃避</strong>。</div>
+              </div>
+              <div class="ios-row-item pitfall-row">
+                <div class="ios-row-title wrap-title">
+                  <span class="build-tag-red">🚫 避坑略過</span>
+                  <span>【雙面機件】／【鋌而走險機件】</span>
+                </div>
+                <div class="ios-row-desc">雖加攻擊但<strong>承受傷害暴增</strong>，故事模式不裝。</div>
+              </div>
             </div>
           </div>
         </section>
@@ -1801,7 +2041,7 @@
                   type: 'gear',
                   badge: '順路必拿',
                   title: '(1) 集齊 3 張起重機 ID 卡 ＋【保護型外脊裝】＋ 血瓶擴充',
-                  detail: '分別前往<strong>左棟</strong>、<strong>右棟（1樓啟動發電機開電梯上3樓）</strong>、<strong>右後方建築</strong>拿齊 3 張起重機 ID 卡；右後方高台橘紅箱必拿<strong>【保護型外脊裝】</strong>（大幅減傷＋護盾回血），並砍死發光小機器人拿<strong>維生包擴充模組（血瓶擴充）</strong>。'
+                  detail: '分別前往<strong>左棟</strong>、<strong>右棟（1樓啟動發電機開電梯上3樓）</strong>、<strong>右後方建築</strong>拿齊 3 張起重機 ID 卡；營地右側『施工電梯大樓』由電梯右旁黃漆貨櫃爬上 2 樓露台紅黑箱必拿<strong>【保護型外脊裝】</strong>（大幅減傷＋護盾回血），並砍死發光小機器人拿<strong>維生包擴充模組（血瓶擴充）</strong>。'
                 },
                 {
                   id: 'ch1_con_step2',
@@ -2670,6 +2910,10 @@
         } else if (state.activeView === 'combat') {
           if (topTitle) topTitle.textContent = '⚡ 色光公式與必點技能';
           if (completedDesk) completedDesk.style.display = 'none';
+          var combatPills = document.querySelectorAll('.combat-anchor-pill');
+          for (var cp = 0; cp < combatPills.length; cp++) {
+            combatPills[cp].classList.toggle('active', combatPills[cp].getAttribute('data-combat-target') === 'combatFlashSection');
+          }
         } else if (state.activeView === 'controller') {
           if (topTitle) topTitle.textContent = '🎮 Edge 手把與寶箱設定';
           if (completedDesk) completedDesk.style.display = 'none';
@@ -3074,6 +3318,53 @@
           });
         }
 
+        // Combat View Dual Anchor Smooth-Scroll Pills
+        var combatAnchorBtns = document.querySelectorAll('.combat-anchor-pill');
+        var mainScrollEl = document.getElementById('mainScroll');
+        function setActiveCombatPill(targetId) {
+          for (var c = 0; c < combatAnchorBtns.length; c++) {
+            var isMatch = combatAnchorBtns[c].getAttribute('data-combat-target') === targetId;
+            combatAnchorBtns[c].classList.toggle('active', isMatch);
+          }
+        }
+        for (var ca = 0; ca < combatAnchorBtns.length; ca++) {
+          (function (btn) {
+            btn.addEventListener('click', function () {
+              var targetId = btn.getAttribute('data-combat-target');
+              var targetEl = targetId ? document.getElementById(targetId) : null;
+              if (!targetEl || !mainScrollEl) return;
+              setActiveCombatPill(targetId);
+              if (targetId === 'combatFlashSection') {
+                mainScrollEl.scrollTo({ top: 0, behavior: 'smooth' });
+              } else {
+                var anchorBar = document.getElementById('combatAnchorBar');
+                var barHeight = anchorBar ? anchorBar.offsetHeight : 60;
+                var scrollRect = mainScrollEl.getBoundingClientRect();
+                var targetRect = targetEl.getBoundingClientRect();
+                var nextTop = mainScrollEl.scrollTop + (targetRect.top - scrollRect.top) - barHeight - 8;
+                mainScrollEl.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+              }
+            });
+          })(combatAnchorBtns[ca]);
+        }
+
+        if (mainScrollEl) {
+          mainScrollEl.addEventListener('scroll', function () {
+            if (state.activeView !== 'combat') return;
+            var buildEl = document.getElementById('combatBuildSection');
+            if (!buildEl) return;
+            var anchorBar = document.getElementById('combatAnchorBar');
+            var barHeight = anchorBar ? anchorBar.offsetHeight : 60;
+            var scrollRect = mainScrollEl.getBoundingClientRect();
+            var buildRect = buildEl.getBoundingClientRect();
+            if (buildRect.top - scrollRect.top <= barHeight + 28) {
+              setActiveCombatPill('combatBuildSection');
+            } else {
+              setActiveCombatPill('combatFlashSection');
+            }
+          }, { passive: true });
+        }
+
         // Edge Back-Paddle Preset Buttons
         var presetBtns = document.querySelectorAll('.preset-btn');
         for (var p = 0; p < presetBtns.length; p++) {
@@ -3239,7 +3530,7 @@
         }
       }
 
-      // Boot v2.0 iPadOS Split-View HUD
+      // Boot v2.1 iPadOS Split-View HUD
       loadState();
       renderAll(false);
       bindEvents();
